@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -52,6 +52,11 @@
     header label.btn { display: inline-block; }
     #file-input { display: none; }
 
+    .lang-select {
+      font-family: monospace; font-size: 12px; padding: 4px 6px;
+      border: none; border-radius: 3px; background: #2f7d64; color: #fff; cursor: pointer;
+    }
+
     #status {
       padding: 8px 16px;
       font-size: 12px;
@@ -90,6 +95,8 @@
     .change-dot.new     { background: #27ae60; }
     td.step-active { color: #222; }
     td.step-inactive { color: #ccc; }
+    td.step-code { padding-right: 0; }
+    td.step-info { padding-left: 0; font-style: italic; font-size: 11px; }
 
     .edit-btn {
       background: none;
@@ -205,6 +212,7 @@
     .steps-table input[type="text"],
     .steps-table input[type="number"],
     .steps-table select { background: transparent; }
+    .steps-table td.stage-inactive { background: #f3f3f3; }
     .steps-table td.changed { background: #fdefe0; }
     .steps-table input:focus { outline: 2px solid #2f7d64; border-color: transparent; }
     .steps-table input.invalid { border-color: #e74c3c; background: #fff5f5; }
@@ -320,6 +328,8 @@
       th { background: #eee !important; color: #000 !important; position: static;
            -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       td, th { border: 1px solid #999; padding: 2px 4px; }
+      td.step-code { border-right: none; padding-right: 0; }
+      td.step-info { border-left: none; padding-left: 2px; font-size: inherit; }
       tr { break-inside: avoid; }
     }
   </style>
@@ -328,50 +338,55 @@
 
 <header>
   <h1>Sticheditor</h1>
-  <button class="btn success" id="new-btn">+ Neuer Stich</button>
-  <button class="btn danger" id="delete-btn" disabled>Stiche löschen</button>
-  <button class="btn" id="copy-btn" disabled>Stiche kopieren</button>
-  <button class="btn" id="paste-btn">Stiche einfügen</button>
+  <button class="btn success" id="new-btn" data-i18n="btnNew">+ New program</button>
+  <button class="btn danger" id="delete-btn" data-i18n="btnDelete" disabled>Delete programs</button>
+  <button class="btn" id="copy-btn" data-i18n="btnCopy" disabled>Copy programs</button>
+  <button class="btn" id="paste-btn" data-i18n="btnPaste">Paste programs</button>
 
   <span class="header-spacer"></span>
 
   <label class="btn">
-    .dat laden
+    <span data-i18n="btnLoadDat">Load .dat</span>
     <input type="file" id="file-input" accept=".dat">
   </label>
-  <button class="btn" id="export-btn" disabled>.dat exportieren</button>
-  <button class="btn" id="print-btn">Drucken</button>
-  <button class="btn danger" id="clear-btn" disabled>Stichliste leeren</button>
-  <span id="dirty-badge">● Es existieren nicht exportierte Änderungen</span>
+  <button class="btn" id="export-btn" data-i18n="btnExportDat" disabled>Export .dat</button>
+  <button class="btn" id="print-btn" data-i18n="btnPrint">Print</button>
+  <button class="btn danger" id="clear-btn" data-i18n="btnClear" disabled>Clear list</button>
+  <span id="dirty-badge" data-i18n="dirtyBadge">● Unexported changes exist</span>
+  <select class="lang-select" id="lang-select" data-i18n-title="langLabel" title="Language">
+    <option value="en">English</option>
+    <option value="de">Deutsch</option>
+    <option value="fr">Français</option>
+  </select>
 </header>
 
 <div id="print-header">
-  <span class="print-title">Stichliste</span>
+  <span class="print-title" data-i18n="printTitle">Program list</span>
   <span id="print-date"></span>
 </div>
 
-<div id="status">Keine Datei geladen.</div>
+<div id="status"></div>
 
 <div class="table-wrap">
   <table id="programs-table">
     <thead>
       <tr>
-        <th class="center col-select"><input type="checkbox" id="select-all" title="Alle auswählen"></th>
+        <th class="center col-select"><input type="checkbox" id="select-all" data-i18n-title="thSelectAll" title="Select all"></th>
         <th class="col-edit"></th>
-        <th>Nr</th>
-        <th>Titel</th>
-        <th>Intern</th>
-        <th>Schüsse</th>
-        <th>Format</th>
-        <th>Passe 1</th>
-        <th>Passe 2</th>
-        <th>Passe 3</th>
-        <th>Passe 4</th>
-        <th>Passe 5</th>
-        <th>Passe 6</th>
-        <th>Passe 7</th>
-        <th>Passe 8</th>
-        <th class="center col-status" title="Änderungsstatus"></th>
+        <th data-i18n="thNr">No.</th>
+        <th data-i18n="thTitle">Title</th>
+        <th data-i18n="thInternal">Internal</th>
+        <th data-i18n="thShots">Shots</th>
+        <th data-i18n="thFormat">Format</th>
+        <th data-i18n-stage="1" colspan="2">Stage 1</th>
+        <th data-i18n-stage="2" colspan="2">Stage 2</th>
+        <th data-i18n-stage="3" colspan="2">Stage 3</th>
+        <th data-i18n-stage="4" colspan="2">Stage 4</th>
+        <th data-i18n-stage="5" colspan="2">Stage 5</th>
+        <th data-i18n-stage="6" colspan="2">Stage 6</th>
+        <th data-i18n-stage="7" colspan="2">Stage 7</th>
+        <th data-i18n-stage="8" colspan="2">Stage 8</th>
+        <th class="center col-status" data-i18n-title="thStatus" title="Change status"></th>
       </tr>
     </thead>
     <tbody id="programs-body"></tbody>
@@ -381,92 +396,94 @@
 <!-- Edit dialog -->
 <dialog id="edit-dialog">
   <div class="dialog-header">
-    <span id="edit-dialog-title">Stich bearbeiten</span>
+    <span id="edit-dialog-title">Edit program</span>
   </div>
   <div class="dialog-body">
 
     <div class="prog-fields">
       <div class="field-group">
-        <label>Stichnummer (1–999)</label>
-        <input type="number" id="f-prgNum" min="1" max="999">
+        <label data-i18n="lblPrgNum">Program number (1–999)</label>
+        <input type="number" id="f-prgNum" min="1" max="999" tabindex="1">
       </div>
       <div class="field-group" style="grid-column: span 2">
-        <label>Titel (max. 32 Zeichen)</label>
-        <input type="text" id="f-title" maxlength="32">
+        <label data-i18n="lblTitle">Title (max. 28 characters)</label>
+        <input type="text" id="f-title" maxlength="28" tabindex="2">
       </div>
       <div class="field-group">
-        <label>Interne Bezeichnung (max. 8)</label>
-        <input type="text" id="f-internalId" maxlength="8">
+        <label data-i18n="lblInternalId">Internal ID (max. 8)</label>
+        <input type="text" id="f-internalId" maxlength="8" tabindex="3">
       </div>
       <div class="field-group">
-        <label>Papiervorschub</label>
-        <input type="number" id="f-printOffset" min="-32768" max="32767">
+        <label data-i18n="lblPrintOffset">Paper feed</label>
+        <input type="number" id="f-printOffset" min="-32768" max="32767" tabindex="4">
       </div>
       <div class="field-group">
-        <label>Druckformat</label>
-        <select id="f-printFormat">
-          <option value="Z">Z  Links &amp; Rechts</option>
-          <option value="L">L  Links</option>
-          <option value="R">R  Rechts</option>
-          <option value="E">E  Eingedrückt</option>
-          <option value="H">H  Hintereinander</option>
-          <option value="T">T  mit Schusskadenz</option>
-          <option value="z">z  Links &amp; Rechts (reduzierter Kopfausdruck)</option>
-          <option value="l">l  Links (reduzierter Kopfausdruck)</option>
-          <option value="r">r  Rechts (reduzierter Kopfausdruck)</option>
-          <option value="e">e  Eingedrückt (reduzierter Kopfausdruck)</option>
-          <option value="h">h  Hintereinander (reduzierter Kopfausdruck)</option>
-          <option value="t">t  mit Schusskadenz (reduzierter Kopfausdruck)</option>
-          <option value="S">S  Spezial</option>
-          <option value="X">X  Kalibrierprogramm</option>
+        <label data-i18n="lblPrintFormat">Print format</label>
+        <select id="f-printFormat" tabindex="5">
+          <option value="Z" data-i18n="pfZ">Z  Left &amp; Right</option>
+          <option value="L" data-i18n="pfL">L  Left</option>
+          <option value="R" data-i18n="pfR">R  Right</option>
+          <option value="E" data-i18n="pfE">E  Compressed</option>
+          <option value="H" data-i18n="pfH">H  Sequential</option>
+          <option value="T" data-i18n="pfT">T  With shot cadence</option>
+          <option value="z" data-i18n="pfz">z  Left &amp; Right (reduced header)</option>
+          <option value="l" data-i18n="pfl">l  Left (reduced header)</option>
+          <option value="r" data-i18n="pfr">r  Right (reduced header)</option>
+          <option value="e" data-i18n="pfe">e  Compressed (reduced header)</option>
+          <option value="h" data-i18n="pfh">h  Sequential (reduced header)</option>
+          <option value="t" data-i18n="pft">t  With shot cadence (reduced header)</option>
+          <option value="S" data-i18n="pfS">S  Special</option>
+          <option value="X" data-i18n="pfX">X  Calibration program</option>
         </select>
       </div>
       <div class="field-group">
-        <label>Waffe (0–255)</label>
-        <input type="number" id="f-weapon" min="0" max="255">
+        <label data-i18n="lblWeapon">Weapon (0–255)</label>
+        <input type="number" id="f-weapon" min="0" max="255" tabindex="6">
       </div>
     </div>
 
     <div class="steps-section">
-      <h3>Passen</h3>
+      <h3 data-i18n="colStages">Stages</h3>
       <div style="overflow-x:auto">
         <table class="steps-table">
           <thead>
             <tr>
               <th class="row-label"></th>
-              <th>Passe 1</th><th>Passe 2</th><th>Passe 3</th><th>Passe 4</th>
-              <th>Passe 5</th><th>Passe 6</th><th>Passe 7</th><th>Passe 8</th>
+              <th data-i18n-stage="1">Stage 1</th><th data-i18n-stage="2">Stage 2</th>
+              <th data-i18n-stage="3">Stage 3</th><th data-i18n-stage="4">Stage 4</th>
+              <th data-i18n-stage="5">Stage 5</th><th data-i18n-stage="6">Stage 6</th>
+              <th data-i18n-stage="7">Stage 7</th><th data-i18n-stage="8">Stage 8</th>
             </tr>
           </thead>
           <tbody id="steps-body"></tbody>
         </table>
       </div>
       <div class="break-btns">
-        Break nicht erlaubt:
-        <button type="button" class="btn secondary sm" id="break-none">Keine Passen</button>
-        <button type="button" class="btn secondary sm" id="break-from-second">Ab der zweiten Passe</button>
-        <button type="button" class="btn secondary sm" id="break-all">Alle Passen</button>
+        <span data-i18n="lblBreakShortcut">No break allowed:</span>
+        <button type="button" class="btn secondary sm" id="break-none" data-i18n="btnBreakNone">No stages</button>
+        <button type="button" class="btn secondary sm" id="break-from-second" data-i18n="btnBreakFromSecond">From the second stage</button>
+        <button type="button" class="btn secondary sm" id="break-all" data-i18n="btnBreakAll">All stages</button>
       </div>
     </div>
 
     <div class="dialog-errors" id="edit-errors">
-      <strong>Validierungsfehler:</strong>
+      <strong data-i18n="errValidationTitle">Validation errors:</strong>
       <ul id="edit-errors-list"></ul>
     </div>
   </div>
   <div class="dialog-footer">
-    <button class="btn secondary" id="edit-clone">Klonen</button>
+    <button class="btn secondary" id="edit-clone" data-i18n="btnClone">Clone</button>
     <div class="footer-spacer"></div>
     <div id="edit-new-btns">
-      <button class="btn secondary" id="edit-cancel">Abbrechen</button>
-      <button class="btn success" id="edit-add">Hinzufügen</button>
+      <button class="btn secondary" id="edit-cancel" data-i18n="btnCancel">Cancel</button>
+      <button class="btn success" id="edit-add" data-i18n="btnAdd">Add</button>
     </div>
     <div id="edit-nav-btns">
-      <button class="btn warn" id="edit-undo">Änderungen zurücksetzen</button>
+      <button class="btn warn" id="edit-undo" data-i18n="btnRevertChanges">Reset changes</button>
       <div class="btn-group">
-        <button class="btn success" id="edit-prev">← Zurück</button>
-        <button class="btn success" id="edit-close">Schliessen</button>
-        <button class="btn success" id="edit-next">Weiter →</button>
+        <button class="btn success" id="edit-prev" data-i18n="btnPrev">← Back</button>
+        <button class="btn success" id="edit-close" data-i18n="btnClose">Close</button>
+        <button class="btn success" id="edit-next" data-i18n="btnNext">Next →</button>
       </div>
     </div>
   </div>
@@ -474,113 +491,323 @@
 
 <!-- Paste dialog -->
 <dialog id="paste-dialog">
-  <div class="dialog-header">Stiche einfügen</div>
+  <div class="dialog-header" data-i18n="dlgPasteTitle">Paste programs</div>
   <div class="dialog-body">
-    <p class="paste-intro">
-      Nummer und Titel können vor dem Einfügen angepasst werden. Bereits
-      vergebene oder doppelte Nummern sind rot markiert und müssen zuerst
-      geändert werden — oder aktivieren Sie unten „Bestehende überschreiben“,
-      um Stiche mit gleicher Nummer zu ersetzen.
+    <p class="paste-intro" data-i18n="pasteIntro">
+      The number and title can be adjusted before pasting. Numbers that are
+      already taken or duplicated are marked red and must be changed first — or
+      enable “Overwrite existing” below to replace programs with the same number.
     </p>
     <table class="paste-table">
       <thead>
         <tr>
-          <th class="center"><input type="checkbox" id="paste-select-all" checked title="Alle auswählen"></th>
-          <th>Nr</th>
-          <th>Titel</th>
-          <th>Schüsse</th>
-          <th>Passen</th>
+          <th class="center"><input type="checkbox" id="paste-select-all" checked data-i18n-title="thSelectAll" title="Select all"></th>
+          <th data-i18n="thNr">No.</th>
+          <th data-i18n="thTitle">Title</th>
+          <th data-i18n="thShots">Shots</th>
+          <th data-i18n="colStages">Stages</th>
         </tr>
       </thead>
       <tbody id="paste-body"></tbody>
     </table>
     <div class="dialog-errors" id="paste-errors">
-      <strong>Validierungsfehler:</strong>
+      <strong data-i18n="errValidationTitle">Validation errors:</strong>
       <ul id="paste-errors-list"></ul>
     </div>
   </div>
   <div class="dialog-footer">
     <label class="paste-overwrite">
       <input type="checkbox" id="paste-overwrite">
-      Bestehende überschreiben
+      <span data-i18n="pasteOverwrite">Overwrite existing</span>
     </label>
     <div class="footer-spacer"></div>
-    <button class="btn secondary" id="paste-cancel">Abbrechen</button>
-    <button class="btn success" id="paste-confirm">Einfügen</button>
+    <button class="btn secondary" id="paste-cancel" data-i18n="btnCancel">Cancel</button>
+    <button class="btn success" id="paste-confirm" data-i18n="btnPasteConfirm">Paste</button>
   </div>
 </dialog>
 
 <!-- Manual-paste fallback (when the clipboard API is unavailable) -->
 <dialog id="paste-input-dialog">
-  <div class="dialog-header">Stiche einfügen</div>
+  <div class="dialog-header" data-i18n="dlgPasteTitle">Paste programs</div>
   <div class="dialog-body">
-    <p class="paste-intro">
-      Fügen Sie die kopierten Stich-Daten (JSON) unten ein (Strg+V). Sobald
-      gültige Daten erkannt werden, geht es automatisch weiter — andernfalls auf
-      „Weiter“ klicken.
+    <p class="paste-intro" data-i18n="pasteInputIntro">
+      Paste the copied program data (JSON) below (Ctrl+V). As soon as valid data
+      is detected it continues automatically — otherwise click “Next”.
     </p>
     <textarea id="paste-input-text" rows="10" spellcheck="false"
-      placeholder="JSON hier einfügen …"></textarea>
+      data-i18n-placeholder="pasteInputPlaceholder" placeholder="Paste JSON here …"></textarea>
     <div class="dialog-errors" id="paste-input-error">
-      <strong>Fehler:</strong> <span id="paste-input-error-msg"></span>
+      <strong data-i18n="errLabel">Error:</strong> <span id="paste-input-error-msg"></span>
     </div>
   </div>
   <div class="dialog-footer">
     <div class="footer-spacer"></div>
-    <button class="btn secondary" id="paste-input-cancel">Abbrechen</button>
-    <button class="btn success" id="paste-input-next">Weiter</button>
+    <button class="btn secondary" id="paste-input-cancel" data-i18n="btnCancel">Cancel</button>
+    <button class="btn success" id="paste-input-next" data-i18n="btnNextStep">Next</button>
   </div>
 </dialog>
 
 <script type="module">
-  import { importDat, exportDat, validateProgram, createProgram, defaultStepInfo,
-           wrapPrograms, unwrapPrograms } from './sticheditor.js';
+  import { importDat, exportDat, validateProgram, formatValidationError,
+           createProgram, defaultStepInfo, wrapPrograms, unwrapPrograms } from './sticheditor.js';
+
+  const byId = (id) => document.getElementById(id);
+  const $$ = (sel) => document.querySelectorAll(sel);
 
   const STORAGE_KEY = 'sintro_programs';
   const BASELINE_KEY = 'sintro_baseline';
+  const LANG_KEY = 'sintro_lang';
+
   let programs = [];
-  let exportFileName = 'Programme.dat';
   let listDirty = false;
-  let baseline = new Map(); // _uid → canonical JSON of last clean state
+  let baseline = new Map();      // _uid → canonical JSON of last clean state
   let uidSeq = 0;
-  let lastCheckedIndex = -1; // anchor row for shift-click range selection
+  let lastCheckedIndex = -1;     // anchor row for shift-click range selection
+  let lang = 'en';
+  let lastStatus = { key: 'statusNoFile', params: {}, type: '' };
 
   // Dialog state
-  let editingIndex = -1;    // index into programs[], or -1 in new mode
+  let editingIndex = -1;         // index into programs[], or -1 in new mode
   let isNewMode = false;
-  let tempProgram = null;   // holds unsaved new/cloned program
+  let tempProgram = null;        // holds an unsaved new/cloned program
+
+  // ── Translations ───────────────────────────────────────────────────────────
+  // UI chrome (en/de/fr). Validation messages live in sticheditor.js. Templates
+  // interpolate {name} placeholders via t(key, params).
+  const UI = {
+    en: {
+      btnNew: '+ New program', btnDelete: 'Delete programs', btnCopy: 'Copy programs',
+      btnPaste: 'Paste programs', btnLoadDat: 'Load .dat', btnExportDat: 'Export .dat',
+      btnPrint: 'Print', btnClear: 'Clear list', dirtyBadge: '● Unexported changes exist',
+      langLabel: 'Language', printTitle: 'Program list', exportBaseName: 'Programs',
+      thSelectAll: 'Select all', thNr: 'No.', thTitle: 'Title', thInternal: 'Internal',
+      thShots: 'Shots', thFormat: 'Format', thStatus: 'Change status',
+      stage: 'Stage', colStages: 'Stages',
+      titleEdit: 'Edit', titleRevert: 'Reset to last exported value',
+      dotNew: 'New program', dotChanged: 'Changed program',
+      dlgNewTitle: 'New program', dlgEditTitleN: 'Edit program {n}',
+      lblPrgNum: 'Program number (1–999)', lblTitle: 'Title (max. 28 characters)',
+      lblInternalId: 'Internal ID (max. 8)', lblPrintOffset: 'Paper feed',
+      lblPrintFormat: 'Print format', lblWeapon: 'Weapon (0–255)',
+      lblBreakShortcut: 'No break allowed:', btnBreakNone: 'No stages',
+      btnBreakFromSecond: 'From the second stage', btnBreakAll: 'All stages',
+      errValidationTitle: 'Validation errors:', errLabel: 'Error:',
+      btnClone: 'Clone', btnCancel: 'Cancel', btnAdd: 'Add', btnRevertChanges: 'Reset changes',
+      btnPrev: '← Back', btnClose: 'Close', btnNext: 'Next →',
+      pfZ: 'Z  Left & Right', pfL: 'L  Left', pfR: 'R  Right', pfE: 'E  Compressed',
+      pfH: 'H  Sequential', pfT: 'T  With shot cadence',
+      pfz: 'z  Left & Right (reduced header)', pfl: 'l  Left (reduced header)',
+      pfr: 'r  Right (reduced header)', pfe: 'e  Compressed (reduced header)',
+      pfh: 'h  Sequential (reduced header)', pft: 't  With shot cadence (reduced header)',
+      pfS: 'S  Special', pfX: 'X  Calibration program',
+      sfShotNum: 'Number of shots', sfInfo: 'Info', sfSil: 'Silhouette', sfCalc: 'Scoring',
+      sfFireMethod: 'Fire method', sfPrintMode: 'Printout', sfStepTime: 'Series-fire time (s)',
+      sfCalcHighscore: 'Print low shots', sfPosition: 'Position', sfBreak: 'No break allowed',
+      silRifle: 'Rifle', silPistol: 'Pistol', silBoarLeft: 'Boar (left)', silBoarRight: 'Boar (right)',
+      silTusker: 'Wild boar', silStag: 'Stag', silRoeDeer: 'Roe deer', silChamois: 'Chamois',
+      silFox: 'Fox', silPfin: 'Pfin',
+      fmProbe: 'Practice', fmSingle: 'Single', fmSeries: 'Series', fmSeriesFree: 'Free series',
+      pmSubtotal: 'Subtotal', pmStageProgTotal: 'Stage & program total',
+      pmProgTotal: 'Program total', pmNoTotal: 'No total',
+      posProne: 'prone', posKneeling: 'kneeling', posStanding: 'standing',
+      dlgPasteTitle: 'Paste programs',
+      pasteIntro: 'The number and title can be adjusted before pasting. Numbers that are already taken or duplicated are marked red and must be changed first — or enable “Overwrite existing” below to replace programs with the same number.',
+      pasteOverwrite: 'Overwrite existing', btnPasteConfirm: 'Paste',
+      noteInvalid: 'invalid', noteDuplicate: 'duplicate', noteTaken: 'already taken', noteOverwrites: 'overwrites',
+      pasteInputIntro: 'Paste the copied program data (JSON) below (Ctrl+V). As soon as valid data is detected it continues automatically — otherwise click “Next”.',
+      pasteInputPlaceholder: 'Paste JSON here …', btnNextStep: 'Next',
+      errNoValidData: 'No valid program data detected.',
+      statusNoFile: 'No file loaded.',
+      statusLoadedFromSession: '{n} programs loaded from session storage.',
+      statusLoading: 'Loading {name}…',
+      statusLoaded: '{n} programs loaded.',
+      statusLoadedWithProblems: '{n} programs loaded — {e} validation problems.',
+      statusError: 'Error: {msg}', statusListCleared: 'Program list cleared.',
+      statusExported: '{n} programs exported.', statusExportFailed: 'Export failed: {msg}',
+      statusDeleted: '{n} programs deleted.',
+      statusCopied: '{n} programs copied to the clipboard.',
+      statusCopyFailed: 'Copy failed — clipboard not available.',
+      statusPasteResult: 'Programs: {parts}.', statusPasted: '{n} pasted', statusOverwritten: '{n} overwritten',
+      confirmReplaceList: 'Replace the current program list ({n} programs)?',
+      confirmClear: 'Delete all {n} programs and clear the list?',
+      confirmDelete: 'Delete {n} programs?',
+    },
+    de: {
+      btnNew: '+ Neuer Stich', btnDelete: 'Stiche löschen', btnCopy: 'Stiche kopieren',
+      btnPaste: 'Stiche einfügen', btnLoadDat: '.dat laden', btnExportDat: '.dat exportieren',
+      btnPrint: 'Drucken', btnClear: 'Stichliste leeren', dirtyBadge: '● Es existieren nicht exportierte Änderungen',
+      langLabel: 'Sprache', printTitle: 'Stichliste', exportBaseName: 'Stiche',
+      thSelectAll: 'Alle auswählen', thNr: 'Nr', thTitle: 'Titel', thInternal: 'Intern',
+      thShots: 'Schüsse', thFormat: 'Format', thStatus: 'Änderungsstatus',
+      stage: 'Passe', colStages: 'Passen',
+      titleEdit: 'Bearbeiten', titleRevert: 'Auf zuletzt exportierten Wert zurücksetzen',
+      dotNew: 'Neuer Stich', dotChanged: 'Geänderter Stich',
+      dlgNewTitle: 'Neuer Stich', dlgEditTitleN: 'Stich {n} bearbeiten',
+      lblPrgNum: 'Stichnummer (1–999)', lblTitle: 'Titel (max. 28 Zeichen)',
+      lblInternalId: 'Interne Bezeichnung (max. 8)', lblPrintOffset: 'Papiervorschub',
+      lblPrintFormat: 'Druckformat', lblWeapon: 'Waffe (0–255)',
+      lblBreakShortcut: 'Break nicht erlaubt:', btnBreakNone: 'Keine Passen',
+      btnBreakFromSecond: 'Ab der zweiten Passe', btnBreakAll: 'Alle Passen',
+      errValidationTitle: 'Validierungsfehler:', errLabel: 'Fehler:',
+      btnClone: 'Klonen', btnCancel: 'Abbrechen', btnAdd: 'Hinzufügen', btnRevertChanges: 'Änderungen zurücksetzen',
+      btnPrev: '← Zurück', btnClose: 'Schliessen', btnNext: 'Weiter →',
+      pfZ: 'Z  Links & Rechts', pfL: 'L  Links', pfR: 'R  Rechts', pfE: 'E  Eingedrückt',
+      pfH: 'H  Hintereinander', pfT: 'T  mit Schusskadenz',
+      pfz: 'z  Links & Rechts (reduzierter Kopfausdruck)', pfl: 'l  Links (reduzierter Kopfausdruck)',
+      pfr: 'r  Rechts (reduzierter Kopfausdruck)', pfe: 'e  Eingedrückt (reduzierter Kopfausdruck)',
+      pfh: 'h  Hintereinander (reduzierter Kopfausdruck)', pft: 't  mit Schusskadenz (reduzierter Kopfausdruck)',
+      pfS: 'S  Spezial', pfX: 'X  Kalibrierprogramm',
+      sfShotNum: 'Anzahl Schüsse', sfInfo: 'Info', sfSil: 'Silhouette', sfCalc: 'Wertung',
+      sfFireMethod: 'Feuerart', sfPrintMode: 'Ausdruck', sfStepTime: 'Seriefeuer-Zeit (s)',
+      sfCalcHighscore: 'Tiefschuss drucken', sfPosition: 'Stellung', sfBreak: 'Break nicht erlaubt',
+      silRifle: 'Gewehr', silPistol: 'Pistole', silBoarLeft: 'Sau links', silBoarRight: 'Sau rechts',
+      silTusker: 'Keiler', silStag: 'Hirsch', silRoeDeer: 'Reh', silChamois: 'Gemse',
+      silFox: 'Fuchs', silPfin: 'Pfin',
+      fmProbe: 'Probe', fmSingle: 'Einzel', fmSeries: 'Serie', fmSeriesFree: 'Serie frei',
+      pmSubtotal: 'Zwischensumme', pmStageProgTotal: 'Passe- & Programm-Total',
+      pmProgTotal: 'Programm-Total', pmNoTotal: 'kein Total',
+      posProne: 'liegend', posKneeling: 'kniend', posStanding: 'stehend',
+      dlgPasteTitle: 'Stiche einfügen',
+      pasteIntro: 'Nummer und Titel können vor dem Einfügen angepasst werden. Bereits vergebene oder doppelte Nummern sind rot markiert und müssen zuerst geändert werden — oder aktivieren Sie unten „Bestehende überschreiben“, um Stiche mit gleicher Nummer zu ersetzen.',
+      pasteOverwrite: 'Bestehende überschreiben', btnPasteConfirm: 'Einfügen',
+      noteInvalid: 'ungültig', noteDuplicate: 'doppelt', noteTaken: 'bereits vergeben', noteOverwrites: 'überschreibt',
+      pasteInputIntro: 'Fügen Sie die kopierten Stich-Daten (JSON) unten ein (Strg+V). Sobald gültige Daten erkannt werden, geht es automatisch weiter — andernfalls auf „Weiter“ klicken.',
+      pasteInputPlaceholder: 'JSON hier einfügen …', btnNextStep: 'Weiter',
+      errNoValidData: 'Keine gültigen Stich-Daten erkannt.',
+      statusNoFile: 'Keine Datei geladen.',
+      statusLoadedFromSession: '{n} Programme aus Sitzungsspeicher geladen.',
+      statusLoading: 'Lade {name}…',
+      statusLoaded: '{n} Programme geladen.',
+      statusLoadedWithProblems: '{n} Programme geladen — {e} Validierungsprobleme.',
+      statusError: 'Fehler: {msg}', statusListCleared: 'Stichliste geleert.',
+      statusExported: '{n} Programme exportiert.', statusExportFailed: 'Export fehlgeschlagen: {msg}',
+      statusDeleted: '{n} Programme gelöscht.',
+      statusCopied: '{n} Stiche in die Zwischenablage kopiert.',
+      statusCopyFailed: 'Kopieren fehlgeschlagen — Zwischenablage nicht verfügbar.',
+      statusPasteResult: 'Stiche: {parts}.', statusPasted: '{n} eingefügt', statusOverwritten: '{n} überschrieben',
+      confirmReplaceList: 'Aktuelle Stichliste ({n} Programme) ersetzen?',
+      confirmClear: 'Alle {n} Programme löschen und Stichliste leeren?',
+      confirmDelete: '{n} Programme löschen?',
+    },
+    fr: {
+      btnNew: '+ Nouveau programme', btnDelete: 'Supprimer les programmes', btnCopy: 'Copier les programmes',
+      btnPaste: 'Coller les programmes', btnLoadDat: 'Charger .dat', btnExportDat: 'Exporter .dat',
+      btnPrint: 'Imprimer', btnClear: 'Vider la liste', dirtyBadge: '● Des modifications non exportées existent',
+      langLabel: 'Langue', printTitle: 'Liste des programmes', exportBaseName: 'Programmes',
+      thSelectAll: 'Tout sélectionner', thNr: 'N°', thTitle: 'Titre', thInternal: 'Interne',
+      thShots: 'Coups', thFormat: 'Format', thStatus: 'État des modifications',
+      stage: 'Passe', colStages: 'Passes',
+      titleEdit: 'Modifier', titleRevert: 'Réinitialiser à la dernière valeur exportée',
+      dotNew: 'Nouveau programme', dotChanged: 'Programme modifié',
+      dlgNewTitle: 'Nouveau programme', dlgEditTitleN: 'Modifier le programme {n}',
+      lblPrgNum: 'Numéro de programme (1–999)', lblTitle: 'Titre (max. 28 caractères)',
+      lblInternalId: 'ID interne (max. 8)', lblPrintOffset: 'Avance papier',
+      lblPrintFormat: 'Format d’impression', lblWeapon: 'Arme (0–255)',
+      lblBreakShortcut: 'Pas de pause :', btnBreakNone: 'Aucune passe',
+      btnBreakFromSecond: 'Dès la deuxième passe', btnBreakAll: 'Toutes les passes',
+      errValidationTitle: 'Erreurs de validation :', errLabel: 'Erreur :',
+      btnClone: 'Cloner', btnCancel: 'Annuler', btnAdd: 'Ajouter', btnRevertChanges: 'Réinitialiser les modifications',
+      btnPrev: '← Précédent', btnClose: 'Fermer', btnNext: 'Suivant →',
+      pfZ: 'Z  Gauche & Droite', pfL: 'L  Gauche', pfR: 'R  Droite', pfE: 'E  Compressé',
+      pfH: 'H  Séquentiel', pfT: 'T  Avec cadence de tir',
+      pfz: 'z  Gauche & Droite (en-tête réduit)', pfl: 'l  Gauche (en-tête réduit)',
+      pfr: 'r  Droite (en-tête réduit)', pfe: 'e  Compressé (en-tête réduit)',
+      pfh: 'h  Séquentiel (en-tête réduit)', pft: 't  Avec cadence de tir (en-tête réduit)',
+      pfS: 'S  Spécial', pfX: 'X  Programme de calibrage',
+      sfShotNum: 'Nombre de coups', sfInfo: 'Info', sfSil: 'Silhouette', sfCalc: 'Cotation',
+      sfFireMethod: 'Mode de tir', sfPrintMode: 'Impression', sfStepTime: 'Temps tir en série (s)',
+      sfCalcHighscore: 'Imprimer coups bas', sfPosition: 'Position', sfBreak: 'Pas de pause',
+      silRifle: 'Carabine', silPistol: 'Pistolet', silBoarLeft: 'Sanglier (gauche)', silBoarRight: 'Sanglier (droite)',
+      silTusker: 'Sanglier mâle', silStag: 'Cerf', silRoeDeer: 'Chevreuil', silChamois: 'Chamois',
+      silFox: 'Renard', silPfin: 'Pfin',
+      fmProbe: 'Essai', fmSingle: 'Coup par coup', fmSeries: 'Série', fmSeriesFree: 'Série libre',
+      pmSubtotal: 'Sous-total', pmStageProgTotal: 'Total passe & programme',
+      pmProgTotal: 'Total programme', pmNoTotal: 'Aucun total',
+      posProne: 'couché', posKneeling: 'à genou', posStanding: 'debout',
+      dlgPasteTitle: 'Coller les programmes',
+      pasteIntro: 'Le numéro et le titre peuvent être ajustés avant le collage. Les numéros déjà attribués ou en double sont marqués en rouge et doivent d’abord être modifiés — ou activez « Écraser les existants » ci-dessous pour remplacer les programmes portant le même numéro.',
+      pasteOverwrite: 'Écraser les existants', btnPasteConfirm: 'Coller',
+      noteInvalid: 'invalide', noteDuplicate: 'en double', noteTaken: 'déjà attribué', noteOverwrites: 'écrase',
+      pasteInputIntro: 'Collez les données de programme copiées (JSON) ci-dessous (Ctrl+V). Dès que des données valides sont détectées, cela continue automatiquement — sinon cliquez sur « Suivant ».',
+      pasteInputPlaceholder: 'Collez le JSON ici …', btnNextStep: 'Suivant',
+      errNoValidData: 'Aucune donnée de programme valide détectée.',
+      statusNoFile: 'Aucun fichier chargé.',
+      statusLoadedFromSession: '{n} programmes chargés depuis la session.',
+      statusLoading: 'Chargement de {name}…',
+      statusLoaded: '{n} programmes chargés.',
+      statusLoadedWithProblems: '{n} programmes chargés — {e} problèmes de validation.',
+      statusError: 'Erreur : {msg}', statusListCleared: 'Liste des programmes vidée.',
+      statusExported: '{n} programmes exportés.', statusExportFailed: 'Échec de l’exportation : {msg}',
+      statusDeleted: '{n} programmes supprimés.',
+      statusCopied: '{n} programmes copiés dans le presse-papiers.',
+      statusCopyFailed: 'Échec de la copie — presse-papiers non disponible.',
+      statusPasteResult: 'Programmes : {parts}.', statusPasted: '{n} collé(s)', statusOverwritten: '{n} écrasé(s)',
+      confirmReplaceList: 'Remplacer la liste de programmes actuelle ({n} programmes) ?',
+      confirmClear: 'Supprimer les {n} programmes et vider la liste ?',
+      confirmDelete: 'Supprimer {n} programmes ?',
+    },
+  };
+
+  function t(key, params) {
+    const dict = UI[lang] || UI.en;
+    let s = dict[key] ?? UI.en[key] ?? key;
+    if (params) s = s.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? ''));
+    return s;
+  }
+
+  function detectLanguage() {
+    try {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved && UI[saved]) return saved;
+    } catch (_) { /* storage may be blocked */ }
+    const nav = (navigator.language || 'en').slice(0, 2).toLowerCase();
+    return UI[nav] ? nav : 'en';
+  }
+
+  function applyStaticTranslations() {
+    document.documentElement.lang = lang;
+    $$('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+    $$('[data-i18n-title]').forEach(el => el.title = t(el.dataset.i18nTitle));
+    $$('[data-i18n-placeholder]').forEach(el => el.placeholder = t(el.dataset.i18nPlaceholder));
+    $$('[data-i18n-stage]').forEach(el => el.textContent = `${t('stage')} ${el.dataset.i18nStage}`);
+  }
+
+  function setLanguage(next) {
+    lang = UI[next] ? next : 'en';
+    try { localStorage.setItem(LANG_KEY, lang); } catch (_) { /* storage may be blocked */ }
+    applyStaticTranslations();
+    renderTable();
+    refreshStatus();
+    if (byId('edit-dialog').open) reflowEditDialogForLanguage();
+    if (byId('paste-dialog').open) refreshPasteState();
+  }
 
   // ── Step field definitions ──────────────────────────────────────────────
+  // options: [value, termKey] — termKey null means the value is its own label.
   const STEP_FIELDS = [
-    { key: 'shotNum',         label: 'Anzahl Schüsse',      type: 'number', min: 0, max: 32767 },
-    { key: 'info',            label: 'Info',                type: 'text',   maxlen: 8 },
-    { key: 'sil',             label: 'Silhouette',          type: 'select',
-      options: [
-        ['A','A  Gewehr'], ['B','B  Gewehr'], ['C','C  Pistole'],
-        ['S','S  Sau links'], ['s','s  Sau rechts'],
-        ['K','K  Keiler'], ['H','H  Hirsch'], ['R','R  Reh'],
-        ['G','G  Gemse'], ['F','F  Fuchs'], ['P','P  Pfin'],
-      ]},
-    { key: 'calc',            label: 'Wertung',             type: 'select', numeric: true,
-      options: [['4','4'],['5','5'],['10','10'],['100','100']] },
-    { key: 'fireMethod',      label: 'Feuerart',            type: 'select',
-      options: [
-        ['P','P  Probe'], ['E','E  Einzel'],
-        ['S','S  Serie'], ['F','F  Serie frei'],
-      ]},
-    { key: 'printMode',       label: 'Ausdruck',            type: 'select',
-      options: [
-        ['Z','Z  Zwischensumme'],
-        ['P','P  Passe- & Programm-Total'],
-        ['G','G  Programm-Total'],
-        ['N','N  kein Total'],
-      ]},
-    { key: 'stepTime1',       label: 'Seriefeuer-Zeit (s)', type: 'number', min: 0, max: 32767 },
-    { key: 'calcHighscore',   label: 'Tiefschuss drucken',  type: 'checkbox' },
-    { key: 'position',        label: 'Stellung',            type: 'select', numeric: true,
-      options: [['0','0  liegend'], ['1','1  kniend'], ['2','2  stehend']] },
-    { key: 'breakNotAllowed', label: 'Break nicht erlaubt', type: 'checkbox' },
+    { key: 'shotNum',    labelKey: 'sfShotNum', type: 'number', min: 0, max: 32767 },
+    { key: 'info',       labelKey: 'sfInfo',    type: 'text',   maxlen: 8 },
+    { key: 'sil',        labelKey: 'sfSil',     type: 'select', options: [
+      ['A','silRifle'], ['B','silRifle'], ['C','silPistol'],
+      ['S','silBoarLeft'], ['s','silBoarRight'], ['K','silTusker'],
+      ['H','silStag'], ['R','silRoeDeer'], ['G','silChamois'], ['F','silFox'], ['P','silPfin'],
+    ]},
+    { key: 'calc',       labelKey: 'sfCalc',    type: 'select', numeric: true,
+      options: [['4',null],['5',null],['10',null],['100',null]] },
+    { key: 'fireMethod', labelKey: 'sfFireMethod', type: 'select', options: [
+      ['P','fmProbe'], ['E','fmSingle'], ['S','fmSeries'], ['F','fmSeriesFree'],
+    ]},
+    { key: 'printMode',  labelKey: 'sfPrintMode', type: 'select', options: [
+      ['Z','pmSubtotal'], ['P','pmStageProgTotal'], ['G','pmProgTotal'], ['N','pmNoTotal'],
+    ]},
+    { key: 'stepTime1',  labelKey: 'sfStepTime', type: 'number', min: 0, max: 32767 },
+    { key: 'calcHighscore', labelKey: 'sfCalcHighscore', type: 'checkbox' },
+    { key: 'position',   labelKey: 'sfPosition', type: 'select', numeric: true,
+      options: [['0','posProne'], ['1','posKneeling'], ['2','posStanding']] },
+    { key: 'breakNotAllowed', labelKey: 'sfBreak', type: 'checkbox' },
   ];
+
+  const optionLabel = (value, termKey) => (termKey ? `${value}  ${t(termKey)}` : value);
 
   // ── Storage ──────────────────────────────────────────────────────────────
   function saveToStorage() {
@@ -595,9 +822,8 @@
 
   // ── Change tracking ────────────────────────────────────────────────────────
   // Each program carries a runtime _uid (ignored by the .dat serializer). The
-  // baseline maps _uid → canonical JSON of the last exported/imported/loaded
-  // "clean" state, so we can tell which programs actually changed — and whether
-  // the list has unexported changes — independent of merely opening a program.
+  // baseline maps _uid → canonical JSON of the last clean state, so we can tell
+  // which programs changed — independent of merely opening one.
   function stableStringify(v) {
     if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
     if (v && typeof v === 'object') {
@@ -609,9 +835,8 @@
 
   function ensureUids() {
     for (const p of programs) if (p._uid != null && p._uid > uidSeq) uidSeq = p._uid;
-    // Also clear the high-water mark past stale baseline uids: after clearing an
-    // imported list the baseline still holds its old uids, and reassigning those
-    // to freshly added/pasted programs would wrongly mark them as "changed".
+    // Advance past stale baseline uids too, so freshly added programs never reuse
+    // a cleared program's uid (which would wrongly mark them "changed").
     for (const uid of baseline.keys()) if (uid > uidSeq) uidSeq = uid;
     for (const p of programs) if (p._uid == null) p._uid = ++uidSeq;
   }
@@ -627,7 +852,7 @@
     return raw ? new Map(JSON.parse(raw)) : null;
   }
 
-  // '' = unchanged, 'new' = added since baseline, 'changed' = edited since baseline
+  // '' = unchanged, 'new' = added since baseline, 'changed' = edited since baseline.
   function changeState(prog) {
     if (prog._uid == null || !baseline.has(prog._uid)) return 'new';
     return stableStringify(baseline.get(prog._uid)) !== stableStringify(prog) ? 'changed' : '';
@@ -637,10 +862,10 @@
     ensureUids();
     const curSig  = programs.map(p => p._uid).join(',');
     const baseSig = [...baseline.keys()].join(',');
-    // An empty list has nothing to export, so it's never "dirty".
+    // An empty list has nothing to export, so it is never "dirty".
     listDirty = programs.length > 0 &&
       (curSig !== baseSig || programs.some(p => changeState(p) !== ''));
-    document.getElementById('dirty-badge').style.visibility = listDirty ? 'visible' : 'hidden';
+    byId('dirty-badge').style.visibility = listDirty ? 'visible' : 'hidden';
   }
 
   window.addEventListener('beforeunload', (e) => {
@@ -650,26 +875,29 @@
   });
 
   // ── Init ─────────────────────────────────────────────────────────────────
+  lang = detectLanguage();
+  byId('lang-select').value = lang;
+  applyStaticTranslations();
+  byId('lang-select').addEventListener('change', (e) => setLanguage(e.target.value));
+
   programs = loadFromStorage();
   const storedBaseline = loadBaseline();
   if (storedBaseline) { baseline = storedBaseline; ensureUids(); }
   else { captureBaseline(); }
   renderTable();
   refreshDirty();
-  if (programs.length > 0) {
-    setStatus(`${programs.length} Programme aus Sitzungsspeicher geladen.`);
-  }
+  if (programs.length > 0) setStatus('statusLoadedFromSession', { n: programs.length });
+  else setStatus('statusNoFile');
 
   // ── File import ──────────────────────────────────────────────────────────
-  document.getElementById('file-input').addEventListener('change', async (e) => {
+  byId('file-input').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (programs.length > 0 && !confirm(`Aktuelle Stichliste (${programs.length} Programme) ersetzen?`)) {
+    if (programs.length > 0 && !confirm(t('confirmReplaceList', { n: programs.length }))) {
       e.target.value = '';
       return;
     }
-    setStatus(`Lade ${file.name}…`);
-    exportFileName = buildExportFilename(file.name);
+    setStatus('statusLoading', { name: file.name });
     try {
       const { programs: loaded, validationErrors } = await importDat(await file.arrayBuffer());
       programs = loaded;
@@ -678,10 +906,10 @@
       renderTable();
       refreshDirty();
       const errCount = Object.keys(validationErrors).length;
-      setStatus(`${programs.length} Programme geladen${errCount ? ` — ${errCount} Validierungsprobleme` : ''}.`,
-                errCount ? 'error' : '');
+      if (errCount) setStatus('statusLoadedWithProblems', { n: programs.length, e: errCount }, 'error');
+      else setStatus('statusLoaded', { n: programs.length });
     } catch (err) {
-      setStatus(`Fehler: ${err.message}`, 'error');
+      setStatus('statusError', { msg: err.message }, 'error');
     }
     e.target.value = '';
   });
@@ -689,34 +917,33 @@
   // ── Print ────────────────────────────────────────────────────────────────
   function updatePrintDate() {
     const now = new Date();
-    document.getElementById('print-date').textContent =
+    byId('print-date').textContent =
       now.toLocaleDateString('de-CH') + ' ' +
       now.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
   }
   window.addEventListener('beforeprint', updatePrintDate);
-  document.getElementById('print-btn').addEventListener('click', () => {
+  byId('print-btn').addEventListener('click', () => {
     updatePrintDate();
     window.print();
   });
 
   // ── Clear list ───────────────────────────────────────────────────────────
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    if (!confirm(`Alle ${programs.length} Programme löschen und Stichliste leeren?`)) return;
+  byId('clear-btn').addEventListener('click', () => {
+    if (!confirm(t('confirmClear', { n: programs.length }))) return;
     programs = [];
-    exportFileName = 'Programme.dat';
     saveToStorage();
     renderTable();
     refreshDirty();
-    setStatus('Stichliste geleert.');
+    setStatus('statusListCleared');
   });
 
   // ── New program ──────────────────────────────────────────────────────────
-  document.getElementById('new-btn').addEventListener('click', () => {
+  byId('new-btn').addEventListener('click', () => {
     openNewDialog(createProgram(nextFreeNum()));
   });
 
   // ── Export ───────────────────────────────────────────────────────────────
-  document.getElementById('export-btn').addEventListener('click', async () => {
+  byId('export-btn').addEventListener('click', async () => {
     try {
       const buffer = await exportDat();
       const bytes = new Uint8Array(buffer);
@@ -726,37 +953,36 @@
       }
       const a = document.createElement('a');
       a.href = `data:application/octet-stream;base64,${btoa(binary)}`;
-      a.download = exportFileName;
+      a.download = buildExportFilename();
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       captureBaseline();
       renderTable();
       refreshDirty();
-      setStatus(`${programs.length} Programme exportiert.`);
+      setStatus('statusExported', { n: programs.length });
     } catch (err) {
-      setStatus(`Export fehlgeschlagen: ${err.message}`, 'error');
+      setStatus('statusExportFailed', { msg: err.message }, 'error');
     }
   });
 
   // ── Delete ───────────────────────────────────────────────────────────────
-  document.getElementById('delete-btn').addEventListener('click', () => {
+  byId('delete-btn').addEventListener('click', () => {
     const selected = getSelectedIndices();
     if (!selected.length) return;
-    if (!confirm(`${selected.length} Programme löschen?`)) return;
+    if (!confirm(t('confirmDelete', { n: selected.length }))) return;
     programs = programs.filter((_, i) => !selected.includes(i));
     saveToStorage();
     renderTable();
     refreshDirty();
-    setStatus(`${selected.length} Programme gelöscht.`);
+    setStatus('statusDeleted', { n: selected.length });
   });
 
   // ── Copy / paste between instances ────────────────────────────────────────
-  // Copy serialises the selected programs to the clipboard in the same envelope
-  // format as the JSON files (wrapPrograms); paste reads it back (in another
-  // browser/instance) and opens a dialog to pick, renumber and rename them
-  // before inserting. Bare arrays are still accepted on paste for compatibility.
-  document.getElementById('copy-btn').addEventListener('click', async () => {
+  // Copy serialises the selected programs to the clipboard in the envelope
+  // format (wrapPrograms); paste reads it back in another instance and opens a
+  // dialog to pick, renumber and rename before inserting.
+  byId('copy-btn').addEventListener('click', async () => {
     const selected = getSelectedIndices();
     if (!selected.length) return;
     const picked = selected.map(i => {
@@ -767,14 +993,13 @@
     const text = JSON.stringify(wrapPrograms(picked), null, 2);
     try {
       await navigator.clipboard.writeText(text);
-      setStatus(`${picked.length} Stiche in die Zwischenablage kopiert.`);
+      setStatus('statusCopied', { n: picked.length });
     } catch (_) {
-      setStatus('Kopieren fehlgeschlagen — Zwischenablage nicht verfügbar.', 'error');
+      setStatus('statusCopyFailed', {}, 'error');
     }
   });
 
-  // Parses pasted text into a validated programs array, or null if it isn't a
-  // recognizable Stich list.
+  // Parses pasted text into a validated programs array, or null if unrecognizable.
   function parsePasteText(text) {
     let parsed;
     try { parsed = JSON.parse(text); } catch (_) { return null; }
@@ -784,11 +1009,9 @@
     return valid ? list : null;
   }
 
-  // True only where the clipboard can be read cleanly. We probe via the
-  // Permissions API rather than calling readText(): the 'clipboard-read'
-  // descriptor is valid in Chromium but throws in Firefox (which would
-  // otherwise pop a native paste menu), so this detects support without any
-  // side effects.
+  // True only where the clipboard can be read cleanly. Probing via the
+  // Permissions API avoids a side effect: 'clipboard-read' is valid in Chromium
+  // but throws in Firefox (which would otherwise pop a native paste menu).
   async function clipboardReadAvailable() {
     if (!navigator.clipboard?.readText || !navigator.permissions?.query) return false;
     try {
@@ -799,9 +1022,7 @@
     }
   }
 
-  document.getElementById('paste-btn').addEventListener('click', async () => {
-    // Where the clipboard API works, read it directly (one click). Otherwise
-    // fall back to the manual paste box — no fancy workarounds.
+  byId('paste-btn').addEventListener('click', async () => {
     if (await clipboardReadAvailable()) {
       try {
         const list = parsePasteText(await navigator.clipboard.readText());
@@ -811,58 +1032,54 @@
     openPasteInput();
   });
 
-  // Manual paste: show a textarea for the user to paste JSON into. It auto-
-  // advances to the paste dialog as soon as the content is a valid Stich list.
+  // Manual paste: a textarea that auto-advances to the paste dialog as soon as
+  // its content is a valid program list.
   function openPasteInput() {
-    const ta = document.getElementById('paste-input-text');
+    const ta = byId('paste-input-text');
     ta.value = '';
     showPasteInputError('');
-    document.getElementById('paste-input-dialog').showModal();
+    byId('paste-input-dialog').showModal();
     setTimeout(() => ta.focus(), 0);
   }
 
   function showPasteInputError(msg) {
-    const box = document.getElementById('paste-input-error');
-    document.getElementById('paste-input-error-msg').textContent = msg || '';
-    box.style.display = msg ? 'block' : 'none';
+    byId('paste-input-error-msg').textContent = msg || '';
+    byId('paste-input-error').style.display = msg ? 'block' : 'none';
   }
 
-  document.getElementById('paste-input-text').addEventListener('input', () => {
-    const list = parsePasteText(document.getElementById('paste-input-text').value);
+  byId('paste-input-text').addEventListener('input', () => {
+    const list = parsePasteText(byId('paste-input-text').value);
     if (list) {
-      document.getElementById('paste-input-dialog').close();
+      byId('paste-input-dialog').close();
       openPasteDialog(list);
     } else {
-      showPasteInputError('');  // clear stale error while the user edits
+      showPasteInputError('');
     }
   });
 
-  document.getElementById('paste-input-next').addEventListener('click', () => {
-    const list = parsePasteText(document.getElementById('paste-input-text').value);
-    if (!list) { showPasteInputError('Keine gültigen Stich-Daten erkannt.'); return; }
-    document.getElementById('paste-input-dialog').close();
+  byId('paste-input-next').addEventListener('click', () => {
+    const list = parsePasteText(byId('paste-input-text').value);
+    if (!list) { showPasteInputError(t('errNoValidData')); return; }
+    byId('paste-input-dialog').close();
     openPasteDialog(list);
   });
 
-  document.getElementById('paste-input-cancel').addEventListener('click', () => {
-    document.getElementById('paste-input-dialog').close();
-  });
-
-  document.getElementById('paste-input-dialog').addEventListener('click', (e) => {
+  byId('paste-input-cancel').addEventListener('click', () => byId('paste-input-dialog').close());
+  byId('paste-input-dialog').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) e.currentTarget.close();
   });
 
   function openPasteDialog(list) {
-    const tbody = document.getElementById('paste-body');
+    const tbody = byId('paste-body');
     tbody.innerHTML = '';
     clearPasteErrors();
-    document.getElementById('paste-select-all').checked = true;
-    document.getElementById('paste-overwrite').checked = false; // protective: off by default
+    byId('paste-select-all').checked = true;
+    byId('paste-overwrite').checked = false;  // protective: off by default
 
     list.forEach(prog => {
       const clone = structuredClone(prog);
       delete clone._uid;
-      const totalShots  = clone.steps.reduce((s, p) => s + (p.shotNum || 0), 0);
+      const totalShots   = clone.steps.reduce((s, p) => s + (p.shotNum || 0), 0);
       const activePasses = clone.steps.filter(p => p.shotNum > 0).length;
 
       const tr = document.createElement('tr');
@@ -910,21 +1127,20 @@
     });
 
     refreshPasteState();
-    document.getElementById('paste-dialog').showModal();
+    byId('paste-dialog').showModal();
   }
 
   function pasteRows() {
-    return [...document.querySelectorAll('#paste-body .paste-row')];
+    return [...$$('#paste-body .paste-row')];
   }
 
-  // Highlights numbers and blocks the insert button until every selected
-  // program has a valid, non-conflicting number. Collisions with existing
-  // programs are blocking (red) unless "Bestehende überschreiben" is enabled,
-  // in which case they are flagged as an overwrite (orange, non-blocking).
-  // Duplicates among the pasted rows and invalid numbers always block.
+  // Highlights numbers and blocks the insert button until every selected program
+  // has a valid, non-conflicting number. Collisions with existing programs are
+  // blocking (red) unless "Overwrite existing" is enabled, in which case they are
+  // an overwrite (orange, non-blocking). Duplicates and invalid numbers block.
   function refreshPasteState() {
     const rows = pasteRows();
-    const overwrite = document.getElementById('paste-overwrite').checked;
+    const overwrite = byId('paste-overwrite').checked;
     const existing = new Set(programs.map(p => p.prgNum));
     const included = rows.filter(r => r._cb.checked);
     const counts = new Map();
@@ -937,33 +1153,33 @@
     rows.forEach(r => {
       const n = Number(r._num.value);
       const valid = Number.isInteger(n) && n >= 1 && n <= 999;
-      let reason = '';  // red, blocking
-      let warn   = '';  // orange, non-blocking
+      let reasonKey = '';  // red, blocking
+      let warnKey   = '';  // orange, non-blocking
       if (r._cb.checked) {
-        if (!valid) reason = 'ungültig';
-        else if (counts.get(n) > 1) reason = 'doppelt';
-        else if (existing.has(n)) { if (overwrite) warn = 'überschreibt'; else reason = 'bereits vergeben'; }
+        if (!valid) reasonKey = 'noteInvalid';
+        else if (counts.get(n) > 1) reasonKey = 'noteDuplicate';
+        else if (existing.has(n)) { if (overwrite) warnKey = 'noteOverwrites'; else reasonKey = 'noteTaken'; }
       }
-      r._num.classList.toggle('taken', reason !== '');
-      r._num.classList.toggle('overwrite', warn !== '');
-      r._note.textContent = reason || warn;
-      r._note.classList.toggle('warn', reason === '' && warn !== '');
-      r._note.style.display = (reason || warn) ? 'block' : 'none';
-      if (reason) anyBad = true;
+      r._num.classList.toggle('taken', reasonKey !== '');
+      r._num.classList.toggle('overwrite', warnKey !== '');
+      const noteKey = reasonKey || warnKey;
+      r._note.textContent = noteKey ? t(noteKey) : '';
+      r._note.classList.toggle('warn', reasonKey === '' && warnKey !== '');
+      r._note.style.display = noteKey ? 'block' : 'none';
+      if (reasonKey) anyBad = true;
     });
 
-    document.getElementById('paste-confirm').disabled = anyBad || included.length === 0;
+    byId('paste-confirm').disabled = anyBad || included.length === 0;
   }
 
-  document.getElementById('paste-overwrite').addEventListener('change', refreshPasteState);
+  byId('paste-overwrite').addEventListener('change', refreshPasteState);
 
   function syncPasteSelectAll() {
     const rows = pasteRows();
-    document.getElementById('paste-select-all').checked =
-      rows.length > 0 && rows.every(r => r._cb.checked);
+    byId('paste-select-all').checked = rows.length > 0 && rows.every(r => r._cb.checked);
   }
 
-  document.getElementById('paste-select-all').addEventListener('change', (e) => {
+  byId('paste-select-all').addEventListener('change', (e) => {
     pasteRows().forEach(r => {
       r._cb.checked = e.target.checked;
       r.classList.toggle('excluded', !e.target.checked);
@@ -971,7 +1187,7 @@
     refreshPasteState();
   });
 
-  document.getElementById('paste-confirm').addEventListener('click', () => {
+  byId('paste-confirm').addEventListener('click', () => {
     const rows = pasteRows().filter(r => r._cb.checked);
     const toAdd = rows.map(r => {
       const prog = structuredClone(r._prog);
@@ -984,23 +1200,20 @@
     const errors = [];
     for (const prog of toAdd) {
       const errs = validateProgram(prog);
-      if (errs.length) errors.push(`Nr ${prog.prgNum}: ${errs.join('; ')}`);
+      if (errs.length) errors.push(`${t('thNr')} ${prog.prgNum}: ${errs.map(e => formatValidationError(e, lang)).join('; ')}`);
     }
-    if (errors.length) { showPasteErrors(errors); return; }
+    if (errors.length) { renderErrorList(byId('paste-errors'), byId('paste-errors-list'), errors); return; }
 
     let added = 0, overwritten = 0;
     for (const prog of toAdd) {
       const existingIdx = programs.findIndex(p => p.prgNum === prog.prgNum);
       if (existingIdx !== -1) {
-        // Overwrite: keep the existing program's identity so change tracking
-        // marks it as "changed" against the last export rather than "new".
+        // Keep the existing program's identity so it reads as "changed", not "new".
         prog._uid = programs[existingIdx]._uid;
         programs[existingIdx] = prog;
         overwritten++;
       } else {
-        const at = programs.findIndex(p => p.prgNum > prog.prgNum);
-        if (at === -1) programs.push(prog);
-        else programs.splice(at, 0, prog);
+        insertSorted(prog);
         added++;
       }
     }
@@ -1008,53 +1221,38 @@
     saveToStorage();
     renderTable();
     refreshDirty();
-    document.getElementById('paste-dialog').close();
+    byId('paste-dialog').close();
     const parts = [];
-    if (added) parts.push(`${added} eingefügt`);
-    if (overwritten) parts.push(`${overwritten} überschrieben`);
-    setStatus(`Stiche: ${parts.join(', ')}.`);
+    if (added) parts.push(t('statusPasted', { n: added }));
+    if (overwritten) parts.push(t('statusOverwritten', { n: overwritten }));
+    setStatus('statusPasteResult', { parts: parts.join(', ') });
   });
 
-  document.getElementById('paste-cancel').addEventListener('click', () => {
-    document.getElementById('paste-dialog').close();
-  });
-
-  document.getElementById('paste-dialog').addEventListener('click', (e) => {
+  byId('paste-cancel').addEventListener('click', () => byId('paste-dialog').close());
+  byId('paste-dialog').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) e.currentTarget.close();
   });
 
-  function showPasteErrors(errors) {
-    const box  = document.getElementById('paste-errors');
-    const list = document.getElementById('paste-errors-list');
-    list.innerHTML = '';
-    for (const e of errors) {
-      const li = document.createElement('li');
-      li.textContent = e;
-      list.appendChild(li);
-    }
-    box.style.display = 'block';
-  }
-
   function clearPasteErrors() {
-    document.getElementById('paste-errors').style.display = 'none';
-    document.getElementById('paste-errors-list').innerHTML = '';
+    byId('paste-errors').style.display = 'none';
+    byId('paste-errors-list').innerHTML = '';
   }
 
   // ── Select all ───────────────────────────────────────────────────────────
-  document.getElementById('select-all').addEventListener('change', (e) => {
-    document.querySelectorAll('.row-cb').forEach(cb => cb.checked = e.target.checked);
+  byId('select-all').addEventListener('change', (e) => {
+    $$('.row-cb').forEach(cb => cb.checked = e.target.checked);
     updateDeleteBtn();
   });
 
   // ── Table render ─────────────────────────────────────────────────────────
   function renderTable() {
     ensureUids();
-    const tbody = document.getElementById('programs-body');
+    const tbody = byId('programs-body');
     tbody.innerHTML = '';
     lastCheckedIndex = -1;
-    document.getElementById('select-all').checked = false;
-    document.getElementById('export-btn').disabled = programs.length === 0;
-    document.getElementById('clear-btn').disabled = programs.length === 0;
+    byId('select-all').checked = false;
+    byId('export-btn').disabled = programs.length === 0;
+    byId('clear-btn').disabled = programs.length === 0;
     updateDeleteBtn();
 
     programs.forEach((prog, idx) => {
@@ -1066,26 +1264,8 @@
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.className = 'row-cb';
-      cb.addEventListener('click', (e) => {
-        // Shift-click extends the range from the last clicked row, matching the
-        // clicked box's new state.
-        if (e.shiftKey && lastCheckedIndex !== -1 && lastCheckedIndex !== idx) {
-          const cbs = [...document.querySelectorAll('.row-cb')];
-          const lo = Math.min(lastCheckedIndex, idx);
-          const hi = Math.max(lastCheckedIndex, idx);
-          for (let i = lo; i <= hi; i++) {
-            cbs[i].checked = cb.checked;
-          }
-          window.getSelection()?.removeAllRanges();
-          syncSelectAll();
-          updateDeleteBtn();
-        }
-        lastCheckedIndex = idx;
-      });
-      cb.addEventListener('change', () => {
-        syncSelectAll();
-        updateDeleteBtn();
-      });
+      cb.addEventListener('click', (e) => handleRowCheckboxClick(e, cb, idx));
+      cb.addEventListener('change', () => { syncSelectAll(); updateDeleteBtn(); });
       cbTd.appendChild(cb);
       tr.appendChild(cbTd);
 
@@ -1093,7 +1273,7 @@
       editTd.className = 'center col-edit';
       const editBtn = document.createElement('button');
       editBtn.className = 'edit-btn';
-      editBtn.title = 'Bearbeiten';
+      editBtn.title = t('titleEdit');
       editBtn.textContent = '✎';
       editBtn.addEventListener('click', () => openEditDialog(idx));
       editTd.appendChild(editBtn);
@@ -1107,25 +1287,45 @@
 
       for (const step of prog.steps) {
         if (step.shotNum > 0) {
-          tr.appendChild(cell(`${step.info || defaultStepInfo(step)} [${step.sil}${step.calc}${step.fireMethod}${step.shotNum}]`, 'step-active'));
+          const pause = step.breakNotAllowed ? '\u00A0' : '·';
+          tr.appendChild(cell(`${pause}${step.sil}${step.calc}${step.fireMethod}${step.shotNum}`, 'step-active step-code'));
+          tr.appendChild(cell(step.info || defaultStepInfo(step), 'step-active step-info'));
         } else {
-          tr.appendChild(cell('–', 'step-inactive'));
+          tr.appendChild(cell('–', 'step-inactive step-code'));
+          tr.appendChild(cell('', 'step-inactive step-info'));
         }
       }
 
-      const state = changeState(prog);
-      const dotTd = document.createElement('td');
-      dotTd.className = 'center col-status';
-      if (state) {
-        const dot = document.createElement('span');
-        dot.className = `change-dot ${state}`;
-        dot.title = state === 'new' ? 'Neuer Stich' : 'Geänderter Stich';
-        dotTd.appendChild(dot);
-      }
-      tr.appendChild(dotTd);
-
+      tr.appendChild(changeDotCell(changeState(prog)));
       tbody.appendChild(tr);
     });
+  }
+
+  // Shift-click extends the range from the last clicked row, matching the
+  // clicked box's new state.
+  function handleRowCheckboxClick(e, cb, idx) {
+    if (e.shiftKey && lastCheckedIndex !== -1 && lastCheckedIndex !== idx) {
+      const cbs = [...$$('.row-cb')];
+      const lo = Math.min(lastCheckedIndex, idx);
+      const hi = Math.max(lastCheckedIndex, idx);
+      for (let i = lo; i <= hi; i++) cbs[i].checked = cb.checked;
+      window.getSelection()?.removeAllRanges();
+      syncSelectAll();
+      updateDeleteBtn();
+    }
+    lastCheckedIndex = idx;
+  }
+
+  function changeDotCell(state) {
+    const td = document.createElement('td');
+    td.className = 'center col-status';
+    if (state) {
+      const dot = document.createElement('span');
+      dot.className = `change-dot ${state}`;
+      dot.title = t(state === 'new' ? 'dotNew' : 'dotChanged');
+      td.appendChild(dot);
+    }
+    return td;
   }
 
   // ── Dialog open/fill ─────────────────────────────────────────────────────
@@ -1133,40 +1333,53 @@
     editingIndex = idx;
     isNewMode = false;
     tempProgram = null;
-    document.getElementById('edit-dialog-title').textContent =
-      `Stich ${programs[idx].prgNum} bearbeiten`;
+    retitleEditDialog();
     fillDialog(programs[idx]);
     updateDialogButtons();
     clearErrors();
-    document.getElementById('edit-dialog').showModal();
+    byId('edit-dialog').showModal();
   }
 
   function openNewDialog(prog) {
     editingIndex = -1;
     isNewMode = true;
     tempProgram = prog;
-    document.getElementById('edit-dialog-title').textContent = 'Neuer Stich';
+    retitleEditDialog();
     fillDialog(prog);
     updateDialogButtons();
     clearErrors();
-    document.getElementById('edit-dialog').showModal();
+    byId('edit-dialog').showModal();
+  }
+
+  function retitleEditDialog() {
+    byId('edit-dialog-title').textContent = isNewMode
+      ? t('dlgNewTitle')
+      : t('dlgEditTitleN', { n: programs[editingIndex]?.prgNum ?? '' });
+  }
+
+  // Re-render the open edit dialog in the current language without losing edits.
+  function reflowEditDialogForLanguage() {
+    const current = readDialogProgram();
+    if (isNewMode) tempProgram = current;
+    retitleEditDialog();
+    fillDialog(current);
   }
 
   function fillDialog(prog) {
-    document.getElementById('f-prgNum').value      = prog.prgNum;
-    document.getElementById('f-title').value       = prog.title;
-    document.getElementById('f-internalId').value  = prog.internalId;
-    document.getElementById('f-printOffset').value = prog.printOffset;
-    document.getElementById('f-printFormat').value = prog.printFormat;
-    document.getElementById('f-weapon').value      = prog.weapon;
+    byId('f-prgNum').value      = prog.prgNum;
+    byId('f-title').value       = prog.title;
+    byId('f-internalId').value  = prog.internalId;
+    byId('f-printOffset').value = prog.printOffset;
+    byId('f-printFormat').value = prog.printFormat;
+    byId('f-weapon').value      = prog.weapon;
     buildStepsBody(prog);
     refreshFieldMarkers();
   }
 
   function updateDialogButtons() {
-    const newBtns  = document.getElementById('edit-new-btns');
-    const navBtns  = document.getElementById('edit-nav-btns');
-    const cloneBtn = document.getElementById('edit-clone');
+    const newBtns  = byId('edit-new-btns');
+    const navBtns  = byId('edit-nav-btns');
+    const cloneBtn = byId('edit-clone');
     if (isNewMode) {
       newBtns.style.display  = 'flex';
       navBtns.style.display  = 'none';
@@ -1175,73 +1388,88 @@
       newBtns.style.display  = 'none';
       navBtns.style.display  = 'flex';
       cloneBtn.style.display = '';
-      document.getElementById('edit-prev').disabled = editingIndex === 0;
-      document.getElementById('edit-next').disabled = editingIndex === programs.length - 1;
+      byId('edit-prev').disabled = editingIndex === 0;
+      byId('edit-next').disabled = editingIndex === programs.length - 1;
     }
   }
 
   function buildStepsBody(prog) {
-    const tbody = document.getElementById('steps-body');
+    const tbody = byId('steps-body');
     tbody.innerHTML = '';
-    for (const field of STEP_FIELDS) {
+    STEP_FIELDS.forEach((field, fieldIndex) => {
       const tr = document.createElement('tr');
       const labelTd = document.createElement('td');
       labelTd.className = 'row-label';
-      labelTd.textContent = field.label;
+      labelTd.textContent = t(field.labelKey);
       tr.appendChild(labelTd);
       for (let i = 0; i < 8; i++) {
-        const td = document.createElement('td');
-        const val = prog.steps[i][field.key];
-        if (field.type === 'checkbox') {
-          const cb = document.createElement('input');
-          cb.type = 'checkbox';
-          cb.dataset.step = i;
-          cb.dataset.key  = field.key;
-          cb.checked = val === 1;
-          td.appendChild(cb);
-        } else if (field.type === 'select') {
-          const sel = document.createElement('select');
-          sel.dataset.step    = i;
-          sel.dataset.key     = field.key;
-          sel.dataset.numeric = field.numeric ? '1' : '0';
-          const strVal = String(val);
-          let matched = false;
-          for (const [v, lbl] of field.options) {
-            const opt = document.createElement('option');
-            opt.value = v;
-            opt.textContent = lbl;
-            if (v === strVal) { opt.selected = true; matched = true; }
-            sel.appendChild(opt);
-          }
-          if (!matched) {
-            const opt = document.createElement('option');
-            opt.value = strVal; opt.textContent = strVal; opt.selected = true;
-            sel.insertBefore(opt, sel.firstChild);
-          }
-          td.appendChild(sel);
-        } else {
-          const inp = document.createElement('input');
-          inp.type = field.type;
-          inp.dataset.step = i;
-          inp.dataset.key  = field.key;
-          inp.value = val;
-          if (field.cls)    inp.classList.add(field.cls);
-          if (field.maxlen) inp.maxLength = field.maxlen;
-          if (field.min != null) inp.min = field.min;
-          if (field.max != null) inp.max = field.max;
-          if (field.type === 'number') inp.classList.add('short');
-          td.appendChild(inp);
-        }
-        tr.appendChild(td);
+        tr.appendChild(buildStepCell(field, prog.steps[i][field.key], i, fieldIndex));
       }
       tbody.appendChild(tr);
-    }
+    });
+    wireInfoPlaceholders();
+    refreshInactiveColumns();
+  }
 
-    // Info is auto-derived when left empty — show the suggestion as a live
-    // placeholder that tracks the step's sil/calc/fireMethod/shotNum inputs.
+  // Column-major tab order: tabbing runs top→down within a stage column, then
+  // to the next stage. Header fields hold tabindex 1–6, so the grid starts at 10.
+  function stepTabIndex(stepIndex, fieldIndex) {
+    return 10 + stepIndex * STEP_FIELDS.length + fieldIndex;
+  }
+
+  function buildStepCell(field, val, stepIndex, fieldIndex) {
+    const td = document.createElement('td');
+    td.dataset.stepCol = stepIndex;
+    if (field.type === 'checkbox') {
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.dataset.step = stepIndex;
+      cb.dataset.key  = field.key;
+      cb.tabIndex = stepTabIndex(stepIndex, fieldIndex);
+      cb.checked = val === 1;
+      td.appendChild(cb);
+    } else if (field.type === 'select') {
+      const sel = document.createElement('select');
+      sel.tabIndex        = stepTabIndex(stepIndex, fieldIndex);
+      sel.dataset.step    = stepIndex;
+      sel.dataset.key     = field.key;
+      sel.dataset.numeric = field.numeric ? '1' : '0';
+      const strVal = String(val);
+      let matched = false;
+      for (const [v, termKey] of field.options) {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = optionLabel(v, termKey);
+        if (v === strVal) { opt.selected = true; matched = true; }
+        sel.appendChild(opt);
+      }
+      if (!matched) {
+        const opt = document.createElement('option');
+        opt.value = strVal; opt.textContent = strVal; opt.selected = true;
+        sel.insertBefore(opt, sel.firstChild);
+      }
+      td.appendChild(sel);
+    } else {
+      const inp = document.createElement('input');
+      inp.type = field.type;
+      inp.dataset.step = stepIndex;
+      inp.dataset.key  = field.key;
+      inp.tabIndex = stepTabIndex(stepIndex, fieldIndex);
+      inp.value = val;
+      if (field.maxlen) inp.maxLength = field.maxlen;
+      if (field.min != null) inp.min = field.min;
+      if (field.max != null) inp.max = field.max;
+      td.appendChild(inp);
+    }
+    return td;
+  }
+
+  // Info is auto-derived when left empty — show the suggestion as a live
+  // placeholder that tracks the step's sil/calc/fireMethod/shotNum inputs.
+  function wireInfoPlaceholders() {
     const stepCtl = (i, key) =>
       document.querySelector(`#steps-body [data-step="${i}"][data-key="${key}"]`);
-    const refreshInfoPlaceholder = (i) => {
+    const refresh = (i) => {
       const infoInp = stepCtl(i, 'info');
       if (!infoInp) return;
       infoInp.placeholder = defaultStepInfo({
@@ -1254,10 +1482,10 @@
     for (let i = 0; i < 8; i++) {
       for (const key of ['sil', 'calc', 'fireMethod', 'shotNum']) {
         const el = stepCtl(i, key);
-        el.addEventListener('input', () => refreshInfoPlaceholder(i));
-        el.addEventListener('change', () => refreshInfoPlaceholder(i));
+        el.addEventListener('input', () => refresh(i));
+        el.addEventListener('change', () => refresh(i));
       }
-      refreshInfoPlaceholder(i);
+      refresh(i);
     }
   }
 
@@ -1265,29 +1493,24 @@
     const base = isNewMode
       ? structuredClone(tempProgram)
       : structuredClone(programs[editingIndex]);
-    base.prgNum      = Number(document.getElementById('f-prgNum').value);
-    base.title       = document.getElementById('f-title').value;
-    base.internalId  = document.getElementById('f-internalId').value;
-    base.printOffset = Number(document.getElementById('f-printOffset').value);
-    base.printFormat = document.getElementById('f-printFormat').value;
-    base.weapon      = Number(document.getElementById('f-weapon').value);
-    document.querySelectorAll('#steps-body [data-step]').forEach(el => {
+    base.prgNum      = Number(byId('f-prgNum').value);
+    base.title       = byId('f-title').value;
+    base.internalId  = byId('f-internalId').value;
+    base.printOffset = Number(byId('f-printOffset').value);
+    base.printFormat = byId('f-printFormat').value;
+    base.weapon      = Number(byId('f-weapon').value);
+    $$('#steps-body [data-step]').forEach(el => {
       const i   = Number(el.dataset.step);
       const key = el.dataset.key;
-      if (el.type === 'checkbox') {
-        base.steps[i][key] = el.checked ? 1 : 0;
-      } else if (el.tagName === 'SELECT') {
-        base.steps[i][key] = el.dataset.numeric === '1' ? Number(el.value) : el.value;
-      } else if (el.type === 'number') {
-        base.steps[i][key] = Number(el.value);
-      } else {
-        base.steps[i][key] = el.value;
-      }
+      if (el.type === 'checkbox') base.steps[i][key] = el.checked ? 1 : 0;
+      else if (el.tagName === 'SELECT') base.steps[i][key] = el.dataset.numeric === '1' ? Number(el.value) : el.value;
+      else if (el.type === 'number') base.steps[i][key] = Number(el.value);
+      else base.steps[i][key] = el.value;
     });
     return base;
   }
 
-  // Validates and persists programs[editingIndex] from form; returns success.
+  // Validates and persists programs[editingIndex] from the form; returns success.
   function saveCurrentToArray() {
     const prog = readDialogProgram();
     const errors = validateProgram(prog);
@@ -1301,45 +1524,41 @@
   }
 
   // ── Dialog button handlers ────────────────────────────────────────────────
-  document.getElementById('edit-undo').addEventListener('click', () => {
+  byId('edit-undo').addEventListener('click', () => {
     const base = baselineProg();
     if (base) fillDialog(base);
     clearErrors();
   });
 
-  document.getElementById('edit-prev').addEventListener('click', () => {
+  byId('edit-prev').addEventListener('click', () => {
     if (!saveCurrentToArray()) return;
     openEditDialog(editingIndex - 1);
   });
 
-  document.getElementById('edit-close').addEventListener('click', () => {
+  byId('edit-close').addEventListener('click', () => {
     if (!saveCurrentToArray()) return;
-    document.getElementById('edit-dialog').close();
+    byId('edit-dialog').close();
   });
 
-  document.getElementById('edit-next').addEventListener('click', () => {
+  byId('edit-next').addEventListener('click', () => {
     if (!saveCurrentToArray()) return;
     openEditDialog(editingIndex + 1);
   });
 
-  document.getElementById('edit-cancel').addEventListener('click', () => {
-    document.getElementById('edit-dialog').close();
-  });
+  byId('edit-cancel').addEventListener('click', () => byId('edit-dialog').close());
 
-  document.getElementById('edit-add').addEventListener('click', () => {
+  byId('edit-add').addEventListener('click', () => {
     const prog = readDialogProgram();
     const errors = validateProgram(prog);
     if (errors.length > 0) { showErrors(errors); return; }
-    const at = programs.findIndex(p => p.prgNum > prog.prgNum);
-    if (at === -1) programs.push(prog);
-    else programs.splice(at, 0, prog);
+    insertSorted(prog);
     saveToStorage();
     renderTable();
     refreshDirty();
-    document.getElementById('edit-dialog').close();
+    byId('edit-dialog').close();
   });
 
-  document.getElementById('edit-clone').addEventListener('click', () => {
+  byId('edit-clone').addEventListener('click', () => {
     const clone = structuredClone(readDialogProgram());
     delete clone._uid;
     clone.prgNum = nextFreeNum();
@@ -1348,15 +1567,15 @@
 
   // ── Per-field change markers (vs. last export) ────────────────────────────
   // Each dialog field whose value differs from the last exported/imported state
-  // gets an orange ✕ badge; clicking it reverts just that field to that value.
+  // gets an orange ✕ badge; clicking it reverts just that field.
   const PROG_FIELD_MAP = {
     'f-prgNum': 'prgNum', 'f-title': 'title', 'f-internalId': 'internalId',
     'f-printOffset': 'printOffset', 'f-printFormat': 'printFormat', 'f-weapon': 'weapon',
   };
   const PROG_FIELD_IDS = Object.keys(PROG_FIELD_MAP);
 
-  // Baseline (last-export) copy of the program currently being edited, or null
-  // (new programs and lists never exported have nothing to compare against).
+  // Baseline (last-export) copy of the program being edited, or null (new
+  // programs and never-exported lists have nothing to compare against).
   function baselineProg() {
     if (isNewMode || editingIndex < 0) return null;
     const uid = programs[editingIndex]?._uid;
@@ -1364,8 +1583,7 @@
   }
 
   function editableControls() {
-    return document.querySelectorAll(
-      '#steps-body [data-step][data-key], ' + PROG_FIELD_IDS.map(id => '#' + id).join(', '));
+    return $$('#steps-body [data-step][data-key], ' + PROG_FIELD_IDS.map(id => '#' + id).join(', '));
   }
 
   function controlContainer(el) {
@@ -1393,7 +1611,7 @@
   }
 
   function refreshFieldMarkers() {
-    document.querySelectorAll('#edit-dialog .revert-badge').forEach(b => b.remove());
+    $$('#edit-dialog .revert-badge').forEach(b => b.remove());
     const base = baselineProg();
     editableControls().forEach(el => {
       const container = controlContainer(el);
@@ -1403,51 +1621,57 @@
         changed = bv !== undefined && String(controlValue(el)) !== String(bv);
       }
       container.classList.toggle('changed', changed);
-      if (changed) {
-        const badge = document.createElement('span');
-        badge.className = 'revert-badge';
-        badge.title = 'Auf zuletzt exportierten Wert zurücksetzen';
-        badge.textContent = '✕';
-        badge.addEventListener('click', () => setControlValue(el, baseValueFor(el, base)));
-        container.appendChild(badge);
-      }
+      if (changed) container.appendChild(makeRevertBadge(el, base));
     });
   }
 
-  document.getElementById('edit-dialog').addEventListener('input', refreshFieldMarkers);
-  document.getElementById('edit-dialog').addEventListener('change', refreshFieldMarkers);
+  function makeRevertBadge(el, base) {
+    const badge = document.createElement('span');
+    badge.className = 'revert-badge';
+    badge.title = t('titleRevert');
+    badge.textContent = '✕';
+    badge.addEventListener('click', () => setControlValue(el, baseValueFor(el, base)));
+    return badge;
+  }
 
-  // ── Break nicht erlaubt shortcuts ─────────────────────────────────────────
+  // Grey out inactive stage columns (shotNum = 0).
+  function refreshInactiveColumns() {
+    for (let i = 0; i < 8; i++) {
+      const shotNum = document.querySelector(`#steps-body [data-step="${i}"][data-key="shotNum"]`);
+      const inactive = Number(shotNum?.value) === 0;
+      $$(`#steps-body td[data-step-col="${i}"]`).forEach(td => td.classList.toggle('stage-inactive', inactive));
+    }
+  }
+
+  byId('edit-dialog').addEventListener('input', refreshFieldMarkers);
+  byId('edit-dialog').addEventListener('change', refreshFieldMarkers);
+  byId('edit-dialog').addEventListener('input', refreshInactiveColumns);
+  byId('edit-dialog').addEventListener('change', refreshInactiveColumns);
+
+  // ── "No break allowed" shortcuts ──────────────────────────────────────────
   function applyBreakNotAllowed(predicate) {
-    document.querySelectorAll('#steps-body [data-key="breakNotAllowed"]').forEach(cb => {
+    $$('#steps-body [data-key="breakNotAllowed"]').forEach(cb => {
       cb.checked = predicate(Number(cb.dataset.step));
       cb.dispatchEvent(new Event('change', { bubbles: true }));
     });
   }
 
-  document.getElementById('break-none').addEventListener('click', () => {
-    applyBreakNotAllowed(() => false);
-  });
+  byId('break-none').addEventListener('click', () => applyBreakNotAllowed(() => false));
+  byId('break-from-second').addEventListener('click', () => applyBreakNotAllowed(i => i > 0));
+  byId('break-all').addEventListener('click', () => applyBreakNotAllowed(() => true));
 
-  document.getElementById('break-from-second').addEventListener('click', () => {
-    applyBreakNotAllowed(i => i > 0);
-  });
-
-  document.getElementById('break-all').addEventListener('click', () => {
-    applyBreakNotAllowed(() => true);
-  });
-
-  document.getElementById('edit-dialog').addEventListener('click', (e) => {
+  byId('edit-dialog').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) e.currentTarget.close();
   });
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-  function buildExportFilename(originalName) {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    return originalName.replace(/2\d{3}-\d{2}-\d{2}/, `${y}-${m}-${d}`);
+  // e.g. "Stiche_2026-07-05-18-19-22.dat" — localized base name + timestamp.
+  function buildExportFilename() {
+    const now = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    const stamp = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}` +
+      `-${p(now.getHours())}-${p(now.getMinutes())}-${p(now.getSeconds())}`;
+    return `${t('exportBaseName')}_${stamp}.dat`;
   }
 
   function nextFreeNum() {
@@ -1455,6 +1679,13 @@
     let n = 1;
     while (used.has(n)) n++;
     return n;
+  }
+
+  // Inserts a program keeping the list sorted by prgNum.
+  function insertSorted(prog) {
+    const at = programs.findIndex(p => p.prgNum > prog.prgNum);
+    if (at === -1) programs.push(prog);
+    else programs.splice(at, 0, prog);
   }
 
   function cell(text, className) {
@@ -1465,55 +1696,62 @@
   }
 
   function getSelectedIndices() {
-    return [...document.querySelectorAll('.row-cb')]
+    return [...$$('.row-cb')]
       .map((cb, i) => cb.checked ? i : -1)
       .filter(i => i >= 0);
   }
 
   function updateDeleteBtn() {
     const count = getSelectedIndices().length;
-    const btn = document.getElementById('delete-btn');
-    btn.disabled = count === 0;
-    btn.textContent = count > 0 ? `Stiche löschen (${count})` : 'Stiche löschen';
-    const copyBtn = document.getElementById('copy-btn');
+    const deleteBtn = byId('delete-btn');
+    deleteBtn.disabled = count === 0;
+    deleteBtn.textContent = count > 0 ? `${t('btnDelete')} (${count})` : t('btnDelete');
+    const copyBtn = byId('copy-btn');
     copyBtn.disabled = count === 0;
-    copyBtn.textContent = count > 0 ? `Stiche kopieren (${count})` : 'Stiche kopieren';
+    copyBtn.textContent = count > 0 ? `${t('btnCopy')} (${count})` : t('btnCopy');
   }
 
   function syncSelectAll() {
-    const cbs = [...document.querySelectorAll('.row-cb')];
-    document.getElementById('select-all').checked =
-      cbs.length > 0 && cbs.every(cb => cb.checked);
+    const cbs = [...$$('.row-cb')];
+    byId('select-all').checked = cbs.length > 0 && cbs.every(cb => cb.checked);
   }
 
   function showErrors(errors) {
-    const box  = document.getElementById('edit-errors');
-    const list = document.getElementById('edit-errors-list');
+    renderErrorList(byId('edit-errors'), byId('edit-errors-list'),
+      errors.map(e => formatValidationError(e, lang)));
+  }
+
+  function clearErrors() {
+    byId('edit-errors').style.display = 'none';
+    byId('edit-errors-list').innerHTML = '';
+  }
+
+  function renderErrorList(box, list, messages) {
     list.innerHTML = '';
-    for (const e of errors) {
+    for (const msg of messages) {
       const li = document.createElement('li');
-      li.textContent = e;
+      li.textContent = msg;
       list.appendChild(li);
     }
     box.style.display = 'block';
   }
 
-  function clearErrors() {
-    document.getElementById('edit-errors').style.display = 'none';
-    document.getElementById('edit-errors-list').innerHTML = '';
+  function setStatus(key, params = {}, type = '') {
+    lastStatus = { key, params, type };
+    const el = byId('status');
+    el.textContent = t(key, params);
+    el.className = type;
   }
 
-  function setStatus(msg, type = '') {
-    const el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = type;
+  function refreshStatus() {
+    setStatus(lastStatus.key, lastStatus.params, lastStatus.type);
   }
 </script>
 
 <!-- PWA:START -->
 <script>
-  // Register the service worker for offline use (ignored on file:// / http
-  // without SW support, e.g. the downloaded single-file build).
+  // Register the service worker for offline use (ignored on file:// or where
+  // service workers are unavailable, e.g. the downloaded single-file build).
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').then((reg) => reg.update()).catch(() => {});

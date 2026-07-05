@@ -15,11 +15,13 @@ import { dirname, join } from 'node:path';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = process.argv[2] || join(HERE, 'sintro-sticheditor.html');
 
-// 1. Library, minus the trailing Node-only CLI block.
+// 1. Library, minus the trailing Node-only CLI block (marked by this section
+//    comment in sticheditor.js — keep the two in sync).
 let lib = readFileSync(join(HERE, 'sticheditor.js'), 'utf8');
-const CLI = "\nif (typeof process !== 'undefined' && process.versions?.node != null) {";
-const cliAt = lib.indexOf(CLI);
-if (cliAt !== -1) lib = lib.slice(0, cliAt).trimEnd() + '\n';
+const CLI_MARKER = '\n// ── Node CLI';
+const cliAt = lib.indexOf(CLI_MARKER);
+if (cliAt === -1) throw new Error('Node CLI marker not found in sticheditor.js');
+lib = lib.slice(0, cliAt).trimEnd() + '\n';
 
 // 2. Page, minus PWA-only markup (between the PWA markers).
 let html = readFileSync(join(HERE, 'index.html'), 'utf8');

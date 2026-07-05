@@ -31,6 +31,9 @@ Es gibt zwei Wege, die App zu nutzen:
    Datei `sintro-sticheditor.html` herunterladen und per Doppelklick öffnen — eine
    einzige Datei, komplett offline, kein Server nötig.
 
+Die App ist auf **Deutsch, Französisch und Englisch** verfügbar. Die Sprache
+wird automatisch aus dem Browser erkannt und lässt sich oben rechts umschalten.
+
 Diese Software ist kostenlos und Open Source, entwickelt für die Schweizer
 Schützenvereine.
 
@@ -44,7 +47,9 @@ Schützenvereine.
 A dependency-free, offline-first editor for the shooting programs ("Stiche") of
 the SINTRO Trefferanzeige (300 m). The device format is a binary `.dat` of fixed
 328-byte records; the app edits a JSON representation and writes the `.dat` back.
-`sticheditor.js` is both the browser module and a Node CLI.
+`sticheditor.js` is both the browser module and a Node CLI. The UI ships in
+German, French and English (auto-detected from the browser, switchable in the
+header).
 
 ### Contents
 
