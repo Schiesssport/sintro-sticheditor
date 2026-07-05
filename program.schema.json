@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintro.local/schemas/program.schema.json",
+  "title": "Sintro Sticheditor Program List",
+  "description": "List of shooting programs (\"Stiche\") for the Sintro Trefferanzeige device. The on-device format is a binary .dat file with fixed 328-byte records; this schema describes the JSON representation used by the editor app and CLI. Each program defines up to 8 sequential stages (\"Passen\"), where each stage specifies a target silhouette, scoring, fire method, posture, and optional series-fire timing. NOTE: one cross-field rule is NOT expressible in JSON Schema — once a step has shotNum=0, every following step must also have shotNum=0 (no gaps between active stages). The runtime validator in sticheditor.js enforces this.",
+  "type": "array",
+  "items": { "$ref": "#/$defs/program" },
+
+  "$defs": {
+    "letter": {
+      "type": "string",
+      "pattern": "^[A-Za-z]$",
+      "description": "A single ASCII letter, upper- or lowercase (A-Z or a-z). Stored on-device as one byte (the ASCII code)."
+    },
+    "capitalLetter": {
+      "type": "string",
+      "pattern": "^[A-Z]$",
+      "description": "A single ASCII uppercase letter (A-Z only). Stored on-device as one byte."
+    },
+    "vbaInteger": {
+      "type": "integer",
+      "minimum": -32768,
+      "maximum": 32767,
+      "description": "Signed 16-bit integer (the VBA Integer type used by the original Excel tool)."
+    },
+    "byte": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "description": "Unsigned 8-bit integer (0-255)."
+    },
+
+    "program": {
+      "type": "object",
+      "description": "A single shooting program (Stich). Always contains exactly 8 step slots — unused trailing slots have shotNum=0 but must still carry valid placeholder values for the other fields (see step defaults).",
+      "required": [
+        "prgNum", "title", "internalId", "printOffset", "printFormat",
+        "weapon", "spare2", "spareByte", "passeProgress", "steps"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "prgNum": {
+          "type": "integer", "minimum": 1, "maximum": 999,
+          "description": "Program number (Stichnummer). Unique identifier shown to the shooter when selecting a program on the device. Must be 1-999."
+        },
+        "title": {
+          "type": "string", "maxLength": 28,
+          "description": "Human-readable program title shown on the device and on printouts. In JSON this is the BARE title only — do NOT include the program number. On disk the .dat field is 32 chars and is always stored as `\"NNN \" + title` (zero-padded 3-digit prgNum + space + title); the parser strips that prefix on read and re-adds it on write. Max 28 ASCII chars in JSON (32 on disk minus the 4-char prefix)."
+        },
+        "internalId": {
+          "type": "string", "maxLength": 8,
+          "description": "Short internal identifier (max 8 ASCII chars). Stored in the Spare3 slot of the binary record and used as a stable program key independent of the user-visible title. May be empty."
+        },
+        "printOffset": {
+          "$ref": "#/$defs/vbaInteger",
+          "description": "Vertical print offset applied to printed score sheets, in device-specific units. Typically 0; range is the full VBA Integer range."
+        },
+        "printFormat": {
+          "$ref": "#/$defs/letter",
+          "description": "Print layout selector. Documented values: 'Z' = Links & Rechts (left & right), 'L' = Links, 'R' = Rechts, 'E' = Eingedrückt (compressed), 'H' = Hintereinander (sequential), 'T' = mit Schusskadenz (with shot cadence). Lowercase variants ('z','l','r','e','h','t') select the same layouts with a reduced header. 'S' = Spezial (special, undocumented), 'X' = Kalibrierprogramm (calibration program — not a real shooting program). Any other single letter validates but may not be recognized by the device."
+        },
+        "weapon": {
+          "$ref": "#/$defs/byte",
+          "description": "Weapon type code (device-specific lookup; 0 if unspecified)."
+        },
+        "spare2": {
+          "$ref": "#/$defs/byte",
+          "description": "Reserved byte. Always 0 in all observed real-world records. Not exposed in the editor UI; set to 0 for new programs."
+        },
+        "spareByte": {
+          "$ref": "#/$defs/byte",
+          "description": "Reserved byte of unknown purpose. Observed values: 48 (ASCII '0') and 49 (ASCII '1'); the device appears to expect it set. Default to 49 for newly created programs. Not exposed in the editor UI."
+        },
+        "passeProgress": {
+          "type": "array",
+          "minItems": 8, "maxItems": 8,
+          "items": { "type": "string", "maxLength": 7 },
+          "description": "Per-stage session/progress data written by the Trefferanzeige device after the program has been used (originally named Spare1 in the VBA source). Exactly 8 strings of up to 7 chars each, one per step. For freshly authored programs, fill with eight empty or all-space strings; the device will overwrite this on first use. Preserve verbatim when round-tripping existing programs."
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 8, "maxItems": 8,
+          "items": { "$ref": "#/$defs/step" },
+          "description": "Exactly 8 stages (Passen). Active stages come first; trailing inactive stages must have shotNum=0. Constraint not expressible here: once any step has shotNum=0, all later steps must also have shotNum=0 (no gaps). All 8 entries are validated even if inactive, so inactive slots still need valid letters/numbers in every field — copy a default step shape."
+        }
+      }
+    },
+
+    "step": {
+      "type": "object",
+      "description": "One stage (Passe) within a program. Active stages have shotNum>0; inactive trailing stages have shotNum=0 but still need valid values in every other field (validation runs on all 8 stages regardless).",
+      "required": [
+        "shotNum", "info", "sil", "calc", "fireMethod", "printMode",
+        "stepTime1", "calcHighscore", "position", "breakNotAllowed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "shotNum": {
+          "type": "integer", "minimum": 0, "maximum": 32767,
+          "description": "Number of shots in this stage. 0 marks the stage (and all subsequent stages) as inactive."
+        },
+        "info": {
+          "type": "string", "maxLength": 8,
+          "description": "Short free-text label shown next to the stage (e.g. 'Probe', 'Match'). Max 8 ASCII chars; may be empty."
+        },
+        "sil": {
+          "$ref": "#/$defs/letter",
+          "description": "Silhouette/target code — a single letter selecting which target image the device displays for this stage. The mapping from letter to target is device-specific."
+        },
+        "calc": {
+          "type": "integer", "minimum": -32768, "maximum": 32767,
+          "not": { "const": 0 },
+          "description": "Scoring/calculation mode (Wertung). Signed 16-bit integer; MUST NOT be 0 (the original VBA rule is `Value <> 0 And IsNumeric`). The specific value selects a scoring scheme on the device. Default for new stages: 5."
+        },
+        "fireMethod": {
+          "$ref": "#/$defs/capitalLetter",
+          "description": "Fire method (Feuerart) — a single uppercase letter (A-Z only; lowercase is rejected). Selects e.g. single fire vs. series fire on the device. Common default: 'E'."
+        },
+        "printMode": {
+          "$ref": "#/$defs/letter",
+          "description": "Per-stage print mode — single letter (any case) controlling how this stage is rendered on the printout. Common default: 'N'."
+        },
+        "stepTime1": {
+          "type": "integer", "minimum": 0, "maximum": 32767,
+          "description": "Time limit for series fire in this stage, in device units (typically seconds). 0 means no time limit / not applicable. Two further time fields (StepTime2, StepTime3) exist in the binary format but are always 0 and are not represented here."
+        },
+        "calcHighscore": {
+          "type": "integer", "enum": [0, 1],
+          "description": "Tiefschuss flag — whether low shots count toward the score. 0 = off, 1 = on."
+        },
+        "position": {
+          "type": "integer", "enum": [0, 1, 2],
+          "description": "Shooting position (German: Stellung) — ISSF terminology. UI/JSON values: 0 = prone (liegend), 1 = kneeling (kniend), 2 = standing (stehend). The on-disk binary uses different codes (1/3/4) and the VBA struct field is misleadingly named `FireMode`; the parser translates between the two — always use 0/1/2 here."
+        },
+        "breakNotAllowed": {
+          "type": "integer", "enum": [0, 1],
+          "description": "Whether the device may pause/break BEFORE this stage starts. 1 = no break (default — proceed immediately from the previous stage), 0 = break allowed (free time before the first shot of this stage, used to encode an unlimited probe/warm-up phase). Common pattern: a program that allows free probe before active shooting has breakNotAllowed=0 on step 0 only; everything else stays 1. A leading P-step in human descriptions (e.g. \"Probe frei + EF10×6\") is NOT encoded as a separate step — it's expressed by setting breakNotAllowed=0 on the first active step."
+        }
+      }
+    }
+  }
+}

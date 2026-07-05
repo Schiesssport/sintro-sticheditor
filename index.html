@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sintro Sticheditor</title>
+  <!-- PWA:START -->
+  <meta name="theme-color" content="#213F37">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <!-- PWA:END -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { font-family: monospace; font-size: 13px; background: #ECE9E0; color: #222; }
+
+    /* ── Header ── */
+    header {
+      background: #213F37;
+      color: #fff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-right: 6px; }
+    header .header-spacer { flex: 1 1 auto; }
+    #dirty-badge {
+      background: #e67e22; color: #fff; padding: 4px 10px;
+      border-radius: 3px; font-size: 11px; white-space: nowrap;
+      visibility: hidden;
+    }
+
+    .btn {
+      cursor: pointer;
+      padding: 5px 12px;
+      border: none;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #fff;
+      background: #2f7d64;
+      user-select: none;
+    }
+    .btn:hover { filter: brightness(1.15); }
+    .btn:disabled { background: #7f8c8d; cursor: default; filter: none; }
+    .btn.danger { background: #e74c3c; }
+    .btn.danger:hover { filter: brightness(1.1); }
+
+    header label.btn { display: inline-block; }
+    #file-input { display: none; }
+
+    #status {
+      padding: 8px 16px;
+      font-size: 12px;
+      color: #555;
+      min-height: 30px;
+      line-height: 30px;
+    }
+    #status.error { color: #c0392b; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; padding: 0 16px 24px; }
+
+    table { border-collapse: collapse; white-space: nowrap; background: #fff; width: 100%; }
+
+    th {
+      background: #213F37;
+      color: #fff;
+      padding: 6px 8px;
+      text-align: left;
+      font-weight: normal;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    th.center, td.center { text-align: center; }
+
+    td { padding: 3px 8px; border-bottom: 1px solid #e8e8e8; vertical-align: middle; }
+    tr:hover td { background: #e9f1ed; }
+    tr.selected td { background: #d3e6dd; }
+
+    td.num { text-align: right; }
+    td.step-active { color: #222; }
+    td.step-inactive { color: #ccc; }
+
+    .edit-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 2px;
+      color: #2f7d64;
+      line-height: 1;
+    }
+    .edit-btn:hover { color: #25604e; }
+
+    /* ── Edit dialog ── */
+    dialog {
+      border: none;
+      border-radius: 6px;
+      padding: 0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      max-width: 95vw;
+      width: max-content;
+      max-height: calc(100vh - 120px);
+      overflow: hidden;
+      margin: 100px auto 0;
+    }
+    dialog[open] { display: flex; flex-direction: column; }
+    dialog::backdrop { background: rgba(0,0,0,0.4); }
+
+    .dialog-header {
+      background: #213F37;
+      color: #fff;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .dialog-body {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* program-level fields */
+    .prog-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px 20px;
+      margin-bottom: 18px;
+    }
+    .field-group { display: flex; flex-direction: column; gap: 3px; }
+    .field-group label { font-size: 11px; color: #888; }
+    .field-group input,
+    .field-group select {
+      font-family: monospace;
+      font-size: 13px;
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      width: 100%;
+    }
+    .field-group input:focus,
+    .field-group select:focus { outline: 2px solid #2f7d64; border-color: transparent; }
+    .field-group input.invalid { border-color: #e74c3c; background: #fff5f5; }
+
+    /* steps table */
+    .steps-section h3 { font-size: 12px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .steps-table { border-collapse: collapse; }
+    .steps-table th {
+      background: #2d5548;
+      font-size: 12px;
+      padding: 5px 8px;
+      min-width: 90px;
+    }
+    .steps-table th.row-label {
+      background: #213F37;
+      text-align: right;
+      min-width: 120px;
+      padding-right: 10px;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+    .steps-table td {
+      border: 1px solid #e0e0e0;
+      padding: 3px 4px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .steps-table td.row-label {
+      background: #f7f7f7;
+      text-align: right;
+      font-size: 11px;
+      color: #666;
+      padding-right: 10px;
+      border: none;
+      border-bottom: 1px solid #eee;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+    .steps-table input[type="text"],
+    .steps-table input[type="number"] {
+      font-family: monospace;
+      font-size: 12px;
+      width: 100%;
+      padding: 3px 4px;
+      border: 1px solid #ddd;
+      border-radius: 2px;
+    }
+    .steps-table input[type="text"],
+    .steps-table input[type="number"],
+    .steps-table select { background: transparent; }
+    .steps-table td.modified { background: #edfaf1; }
+    .steps-table input:focus { outline: 2px solid #2f7d64; border-color: transparent; }
+    .steps-table input.invalid { border-color: #e74c3c; background: #fff5f5; }
+    .prog-fields input.modified,
+    .prog-fields select.modified { background: #edfaf1; }
+    .steps-table select {
+      font-family: monospace;
+      font-size: 11px;
+      padding: 2px 2px;
+      border: 1px solid #ddd;
+      border-radius: 2px;
+      width: 100%;
+    }
+
+    /* errors */
+    .dialog-errors {
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: #fff5f5;
+      border: 1px solid #f5c6cb;
+      border-radius: 3px;
+      color: #c0392b;
+      font-size: 11px;
+      display: none;
+    }
+    .dialog-errors ul { padding-left: 16px; }
+
+    .dialog-footer {
+      padding: 10px 16px;
+      border-top: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .footer-spacer { flex: 1; }
+    #edit-nav-btns, #edit-new-btns { display: flex; gap: 8px; align-items: center; }
+    .btn-group { display: flex; }
+    .btn-group .btn { border-radius: 0; border-right: 1px solid rgba(255,255,255,0.25); }
+    .btn-group .btn:first-child { border-radius: 3px 0 0 3px; }
+    .btn-group .btn:last-child  { border-radius: 0 3px 3px 0; border-right: none; }
+    .btn.secondary { background: #7f8c8d; }
+    .btn.success { background: #27ae60; }
+    .btn.success:hover { filter: brightness(1.1); }
+    .btn.sm { padding: 3px 8px; font-size: 11px; }
+    .break-btns { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 11px; color: #666; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Sticheditor</h1>
+  <button class="btn success" id="new-btn">+ Neuer Stich</button>
+  <button class="btn danger" id="delete-btn" disabled>Stiche löschen</button>
+
+  <span class="header-spacer"></span>
+
+  <label class="btn">
+    .dat laden
+    <input type="file" id="file-input" accept=".dat">
+  </label>
+  <button class="btn" id="export-btn" disabled>.dat exportieren</button>
+  <button class="btn danger" id="clear-btn" disabled>Stichliste leeren</button>
+  <span id="dirty-badge">● Es existieren nicht exportierte Änderungen</span>
+</header>
+
+<div id="status">Keine Datei geladen.</div>
+
+<div class="table-wrap">
+  <table id="programs-table">
+    <thead>
+      <tr>
+        <th class="center"><input type="checkbox" id="select-all" title="Alle auswählen"></th>
+        <th></th>
+        <th>Nr</th>
+        <th>Titel</th>
+        <th>Intern</th>
+        <th>Schüsse</th>
+        <th>Format</th>
+        <th>Passe 1</th>
+        <th>Passe 2</th>
+        <th>Passe 3</th>
+        <th>Passe 4</th>
+        <th>Passe 5</th>
+        <th>Passe 6</th>
+        <th>Passe 7</th>
+        <th>Passe 8</th>
+      </tr>
+    </thead>
+    <tbody id="programs-body"></tbody>
+  </table>
+</div>
+
+<!-- Edit dialog -->
+<dialog id="edit-dialog">
+  <div class="dialog-header">
+    <span id="edit-dialog-title">Stich bearbeiten</span>
+  </div>
+  <div class="dialog-body">
+
+    <div class="prog-fields">
+      <div class="field-group">
+        <label>Stichnummer (1–999)</label>
+        <input type="number" id="f-prgNum" min="1" max="999">
+      </div>
+      <div class="field-group" style="grid-column: span 2">
+        <label>Titel (max. 32 Zeichen)</label>
+        <input type="text" id="f-title" maxlength="32">
+      </div>
+      <div class="field-group">
+        <label>Interne Bezeichnung (max. 8)</label>
+        <input type="text" id="f-internalId" maxlength="8">
+      </div>
+      <div class="field-group">
+        <label>Papiervorschub</label>
+        <input type="number" id="f-printOffset" min="-32768" max="32767">
+      </div>
+      <div class="field-group">
+        <label>Druckformat</label>
+        <select id="f-printFormat">
+          <option value="Z">Z  Links &amp; Rechts</option>
+          <option value="L">L  Links</option>
+          <option value="R">R  Rechts</option>
+          <option value="E">E  Eingedrückt</option>
+          <option value="H">H  Hintereinander</option>
+          <option value="T">T  mit Schusskadenz</option>
+          <option value="z">z  Links &amp; Rechts (reduzierter Kopfausdruck)</option>
+          <option value="l">l  Links (reduzierter Kopfausdruck)</option>
+          <option value="r">r  Rechts (reduzierter Kopfausdruck)</option>
+          <option value="e">e  Eingedrückt (reduzierter Kopfausdruck)</option>
+          <option value="h">h  Hintereinander (reduzierter Kopfausdruck)</option>
+          <option value="t">t  mit Schusskadenz (reduzierter Kopfausdruck)</option>
+          <option value="S">S  Spezial</option>
+          <option value="X">X  Kalibrierprogramm</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Waffe (0–255)</label>
+        <input type="number" id="f-weapon" min="0" max="255">
+      </div>
+    </div>
+
+    <div class="steps-section">
+      <h3>Passen</h3>
+      <div style="overflow-x:auto">
+        <table class="steps-table">
+          <thead>
+            <tr>
+              <th class="row-label"></th>
+              <th>Passe 1</th><th>Passe 2</th><th>Passe 3</th><th>Passe 4</th>
+              <th>Passe 5</th><th>Passe 6</th><th>Passe 7</th><th>Passe 8</th>
+            </tr>
+          </thead>
+          <tbody id="steps-body"></tbody>
+        </table>
+      </div>
+      <div class="break-btns">
+        Break nicht erlaubt:
+        <button type="button" class="btn secondary sm" id="break-none">Keine Passen</button>
+        <button type="button" class="btn secondary sm" id="break-from-second">Ab der zweiten Passe</button>
+        <button type="button" class="btn secondary sm" id="break-all">Alle Passen</button>
+      </div>
+    </div>
+
+    <div class="dialog-errors" id="edit-errors">
+      <strong>Validierungsfehler:</strong>
+      <ul id="edit-errors-list"></ul>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn secondary" id="edit-clone">Klonen</button>
+    <div class="footer-spacer"></div>
+    <div id="edit-new-btns">
+      <button class="btn secondary" id="edit-cancel">Abbrechen</button>
+      <button class="btn success" id="edit-add">Hinzufügen</button>
+    </div>
+    <div id="edit-nav-btns">
+      <button class="btn secondary" id="edit-undo">Änderungen rücksetzen</button>
+      <div class="btn-group">
+        <button class="btn success" id="edit-prev">← Zurück</button>
+        <button class="btn success" id="edit-close">Schliessen</button>
+        <button class="btn success" id="edit-next">Weiter →</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script type="module">
+  import { importDat, exportDat, validateProgram, createProgram, defaultStepInfo } from './sticheditor.js';
+
+  const STORAGE_KEY = 'sintro_programs';
+  let programs = [];
+  let exportFileName = 'Programme.dat';
+  let listDirty = false;
+
+  // Dialog state
+  let editingIndex = -1;    // index into programs[], or -1 in new mode
+  let editingSnapshot = null; // form state to restore on Rückgängig
+  let isNewMode = false;
+  let tempProgram = null;   // holds unsaved new/cloned program
+
+  // ── Step field definitions ──────────────────────────────────────────────
+  const STEP_FIELDS = [
+    { key: 'shotNum',         label: 'Anzahl Schüsse',      type: 'number', min: 0, max: 32767 },
+    { key: 'info',            label: 'Info',                type: 'text',   maxlen: 8 },
+    { key: 'sil',             label: 'Silhouette',          type: 'select',
+      options: [
+        ['A','A  Gewehr'], ['B','B  Gewehr'], ['C','C  Pistole'],
+        ['S','S  Sau links'], ['s','s  Sau rechts'],
+        ['K','K  Keiler'], ['H','H  Hirsch'], ['R','R  Reh'],
+        ['G','G  Gemse'], ['F','F  Fuchs'], ['P','P  Pfin'],
+      ]},
+    { key: 'calc',            label: 'Wertung',             type: 'select', numeric: true,
+      options: [['4','4'],['5','5'],['10','10'],['100','100']] },
+    { key: 'fireMethod',      label: 'Feuerart',            type: 'select',
+      options: [
+        ['P','P  Probe'], ['E','E  Einzel'],
+        ['S','S  Serie'], ['F','F  Serie frei'],
+      ]},
+    { key: 'printMode',       label: 'Ausdruck',            type: 'select',
+      options: [
+        ['Z','Z  Zwischensumme'],
+        ['P','P  Passe- & Programm-Total'],
+        ['G','G  Programm-Total'],
+        ['N','N  kein Total'],
+      ]},
+    { key: 'stepTime1',       label: 'Seriefeuer-Zeit (s)', type: 'number', min: 0, max: 32767 },
+    { key: 'calcHighscore',   label: 'Tiefschuss drucken',  type: 'checkbox' },
+    { key: 'position',        label: 'Stellung',            type: 'select', numeric: true,
+      options: [['0','0  liegend'], ['1','1  kniend'], ['2','2  stehend']] },
+    { key: 'breakNotAllowed', label: 'Break nicht erlaubt', type: 'checkbox' },
+  ];
+
+  // ── Storage ──────────────────────────────────────────────────────────────
+  function saveToStorage() {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(programs));
+  }
+
+  function loadFromStorage() {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
+
+  function setListDirty(v) {
+    listDirty = v;
+    document.getElementById('dirty-badge').style.visibility = v ? 'visible' : 'hidden';
+  }
+
+  window.addEventListener('beforeunload', (e) => {
+    if (!listDirty || !programs.length) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  programs = loadFromStorage();
+  renderTable();
+  if (programs.length > 0) {
+    setStatus(`${programs.length} Programme aus Sitzungsspeicher geladen.`);
+    setListDirty(true);
+  }
+
+  // ── File import ──────────────────────────────────────────────────────────
+  document.getElementById('file-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (programs.length > 0 && !confirm(`Aktuelle Stichliste (${programs.length} Programme) ersetzen?`)) {
+      e.target.value = '';
+      return;
+    }
+    setStatus(`Lade ${file.name}…`);
+    exportFileName = buildExportFilename(file.name);
+    try {
+      const { programs: loaded, validationErrors } = await importDat(await file.arrayBuffer());
+      programs = loaded;
+      renderTable();
+      const errCount = Object.keys(validationErrors).length;
+      setListDirty(true);
+      saveToStorage();
+      setStatus(`${programs.length} Programme geladen${errCount ? ` — ${errCount} Validierungsprobleme` : ''}.`,
+                errCount ? 'error' : '');
+    } catch (err) {
+      setStatus(`Fehler: ${err.message}`, 'error');
+    }
+    e.target.value = '';
+  });
+
+  // ── Clear list ───────────────────────────────────────────────────────────
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    if (!confirm(`Alle ${programs.length} Programme löschen und Stichliste leeren?`)) return;
+    programs = [];
+    exportFileName = 'Programme.dat';
+    setListDirty(false);
+    saveToStorage();
+    renderTable();
+    setStatus('Stichliste geleert.');
+  });
+
+  // ── New program ──────────────────────────────────────────────────────────
+  document.getElementById('new-btn').addEventListener('click', () => {
+    openNewDialog(createProgram(nextFreeNum()));
+  });
+
+  // ── Export ───────────────────────────────────────────────────────────────
+  document.getElementById('export-btn').addEventListener('click', async () => {
+    try {
+      const buffer = await exportDat();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      }
+      const a = document.createElement('a');
+      a.href = `data:application/octet-stream;base64,${btoa(binary)}`;
+      a.download = exportFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setListDirty(false);
+      setStatus(`${programs.length} Programme exportiert.`);
+    } catch (err) {
+      setStatus(`Export fehlgeschlagen: ${err.message}`, 'error');
+    }
+  });
+
+  // ── Delete ───────────────────────────────────────────────────────────────
+  document.getElementById('delete-btn').addEventListener('click', () => {
+    const selected = getSelectedIndices();
+    if (!selected.length) return;
+    if (!confirm(`${selected.length} Programme löschen?`)) return;
+    programs = programs.filter((_, i) => !selected.includes(i));
+    setListDirty(true);
+    saveToStorage();
+    renderTable();
+    setStatus(`${selected.length} Programme gelöscht.`);
+  });
+
+  // ── Select all ───────────────────────────────────────────────────────────
+  document.getElementById('select-all').addEventListener('change', (e) => {
+    document.querySelectorAll('.row-cb').forEach(cb => cb.checked = e.target.checked);
+    updateDeleteBtn();
+  });
+
+  // ── Table render ─────────────────────────────────────────────────────────
+  function renderTable() {
+    const tbody = document.getElementById('programs-body');
+    tbody.innerHTML = '';
+    document.getElementById('select-all').checked = false;
+    document.getElementById('export-btn').disabled = programs.length === 0;
+    document.getElementById('clear-btn').disabled = programs.length === 0;
+    updateDeleteBtn();
+
+    programs.forEach((prog, idx) => {
+      const totalShots = prog.steps.reduce((s, p) => s + p.shotNum, 0);
+      const tr = document.createElement('tr');
+
+      const cbTd = document.createElement('td');
+      cbTd.className = 'center';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'row-cb';
+      cb.addEventListener('change', () => {
+        tr.classList.toggle('selected', cb.checked);
+        syncSelectAll();
+        updateDeleteBtn();
+      });
+      cbTd.appendChild(cb);
+      tr.appendChild(cbTd);
+
+      const editTd = document.createElement('td');
+      editTd.className = 'center';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'edit-btn';
+      editBtn.title = 'Bearbeiten';
+      editBtn.textContent = '✎';
+      editBtn.addEventListener('click', () => openEditDialog(idx));
+      editTd.appendChild(editBtn);
+      tr.appendChild(editTd);
+
+      tr.appendChild(cell(prog.prgNum, 'num'));
+      tr.appendChild(cell(prog.title));
+      tr.appendChild(cell(prog.internalId));
+      tr.appendChild(cell(totalShots, 'num'));
+      tr.appendChild(cell(prog.printFormat));
+
+      for (const step of prog.steps) {
+        if (step.shotNum > 0) {
+          tr.appendChild(cell(`${step.info || defaultStepInfo(step)} [${step.sil}${step.calc}${step.fireMethod}${step.shotNum}]`, 'step-active'));
+        } else {
+          tr.appendChild(cell('–', 'step-inactive'));
+        }
+      }
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── Dialog open/fill ─────────────────────────────────────────────────────
+  function openEditDialog(idx) {
+    editingIndex = idx;
+    isNewMode = false;
+    tempProgram = null;
+    editingSnapshot = structuredClone(programs[idx]);
+    document.getElementById('edit-dialog-title').textContent =
+      `Stich ${programs[idx].prgNum} bearbeiten`;
+    fillDialog(programs[idx]);
+    updateDialogButtons();
+    clearErrors();
+    document.getElementById('edit-dialog').showModal();
+  }
+
+  function openNewDialog(prog) {
+    editingIndex = -1;
+    isNewMode = true;
+    tempProgram = prog;
+    editingSnapshot = structuredClone(prog);
+    document.getElementById('edit-dialog-title').textContent = 'Neuer Stich';
+    fillDialog(prog);
+    updateDialogButtons();
+    clearErrors();
+    document.getElementById('edit-dialog').showModal();
+  }
+
+  function fillDialog(prog) {
+    document.getElementById('f-prgNum').value      = prog.prgNum;
+    document.getElementById('f-title').value       = prog.title;
+    document.getElementById('f-internalId').value  = prog.internalId;
+    document.getElementById('f-printOffset').value = prog.printOffset;
+    document.getElementById('f-printFormat').value = prog.printFormat;
+    document.getElementById('f-weapon').value      = prog.weapon;
+    buildStepsBody(prog);
+    // clear any dirty markers left from previous program
+    document.querySelectorAll('#edit-dialog .modified').forEach(el => el.classList.remove('modified'));
+  }
+
+  function updateDialogButtons() {
+    const newBtns  = document.getElementById('edit-new-btns');
+    const navBtns  = document.getElementById('edit-nav-btns');
+    const cloneBtn = document.getElementById('edit-clone');
+    if (isNewMode) {
+      newBtns.style.display  = 'flex';
+      navBtns.style.display  = 'none';
+      cloneBtn.style.display = 'none';
+    } else {
+      newBtns.style.display  = 'none';
+      navBtns.style.display  = 'flex';
+      cloneBtn.style.display = '';
+      document.getElementById('edit-prev').disabled = editingIndex === 0;
+      document.getElementById('edit-next').disabled = editingIndex === programs.length - 1;
+    }
+  }
+
+  function buildStepsBody(prog) {
+    const tbody = document.getElementById('steps-body');
+    tbody.innerHTML = '';
+    for (const field of STEP_FIELDS) {
+      const tr = document.createElement('tr');
+      const labelTd = document.createElement('td');
+      labelTd.className = 'row-label';
+      labelTd.textContent = field.label;
+      tr.appendChild(labelTd);
+      for (let i = 0; i < 8; i++) {
+        const td = document.createElement('td');
+        const val = prog.steps[i][field.key];
+        if (field.type === 'checkbox') {
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.dataset.step = i;
+          cb.dataset.key  = field.key;
+          cb.checked = val === 1;
+          td.appendChild(cb);
+        } else if (field.type === 'select') {
+          const sel = document.createElement('select');
+          sel.dataset.step    = i;
+          sel.dataset.key     = field.key;
+          sel.dataset.numeric = field.numeric ? '1' : '0';
+          const strVal = String(val);
+          let matched = false;
+          for (const [v, lbl] of field.options) {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = lbl;
+            if (v === strVal) { opt.selected = true; matched = true; }
+            sel.appendChild(opt);
+          }
+          if (!matched) {
+            const opt = document.createElement('option');
+            opt.value = strVal; opt.textContent = strVal; opt.selected = true;
+            sel.insertBefore(opt, sel.firstChild);
+          }
+          td.appendChild(sel);
+        } else {
+          const inp = document.createElement('input');
+          inp.type = field.type;
+          inp.dataset.step = i;
+          inp.dataset.key  = field.key;
+          inp.value = val;
+          if (field.cls)    inp.classList.add(field.cls);
+          if (field.maxlen) inp.maxLength = field.maxlen;
+          if (field.min != null) inp.min = field.min;
+          if (field.max != null) inp.max = field.max;
+          if (field.type === 'number') inp.classList.add('short');
+          td.appendChild(inp);
+        }
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+
+    // Info is auto-derived when left empty — show the suggestion as a live
+    // placeholder that tracks the step's sil/calc/fireMethod/shotNum inputs.
+    const stepCtl = (i, key) =>
+      document.querySelector(`#steps-body [data-step="${i}"][data-key="${key}"]`);
+    const refreshInfoPlaceholder = (i) => {
+      const infoInp = stepCtl(i, 'info');
+      if (!infoInp) return;
+      infoInp.placeholder = defaultStepInfo({
+        sil:        stepCtl(i, 'sil').value,
+        calc:       Number(stepCtl(i, 'calc').value),
+        fireMethod: stepCtl(i, 'fireMethod').value,
+        shotNum:    Number(stepCtl(i, 'shotNum').value),
+      });
+    };
+    for (let i = 0; i < 8; i++) {
+      for (const key of ['sil', 'calc', 'fireMethod', 'shotNum']) {
+        const el = stepCtl(i, key);
+        el.addEventListener('input', () => refreshInfoPlaceholder(i));
+        el.addEventListener('change', () => refreshInfoPlaceholder(i));
+      }
+      refreshInfoPlaceholder(i);
+    }
+  }
+
+  function readDialogProgram() {
+    const base = isNewMode
+      ? structuredClone(tempProgram)
+      : structuredClone(programs[editingIndex]);
+    base.prgNum      = Number(document.getElementById('f-prgNum').value);
+    base.title       = document.getElementById('f-title').value;
+    base.internalId  = document.getElementById('f-internalId').value;
+    base.printOffset = Number(document.getElementById('f-printOffset').value);
+    base.printFormat = document.getElementById('f-printFormat').value;
+    base.weapon      = Number(document.getElementById('f-weapon').value);
+    document.querySelectorAll('#steps-body [data-step]').forEach(el => {
+      const i   = Number(el.dataset.step);
+      const key = el.dataset.key;
+      if (el.type === 'checkbox') {
+        base.steps[i][key] = el.checked ? 1 : 0;
+      } else if (el.tagName === 'SELECT') {
+        base.steps[i][key] = el.dataset.numeric === '1' ? Number(el.value) : el.value;
+      } else if (el.type === 'number') {
+        base.steps[i][key] = Number(el.value);
+      } else {
+        base.steps[i][key] = el.value;
+      }
+    });
+    return base;
+  }
+
+  // Validates and persists programs[editingIndex] from form; returns success.
+  function saveCurrentToArray() {
+    const prog = readDialogProgram();
+    const errors = validateProgram(prog);
+    if (errors.length > 0) { showErrors(errors); return false; }
+    programs[editingIndex] = prog;
+    editingSnapshot = structuredClone(prog);
+    setListDirty(true);
+    saveToStorage();
+    renderTable();
+    clearErrors();
+    return true;
+  }
+
+  // ── Dialog button handlers ────────────────────────────────────────────────
+  document.getElementById('edit-undo').addEventListener('click', () => {
+    fillDialog(editingSnapshot);
+    clearErrors();
+  });
+
+  document.getElementById('edit-prev').addEventListener('click', () => {
+    if (!saveCurrentToArray()) return;
+    openEditDialog(editingIndex - 1);
+  });
+
+  document.getElementById('edit-close').addEventListener('click', () => {
+    const idx = editingIndex;
+    if (!saveCurrentToArray()) return;
+    document.getElementById('edit-dialog').close();
+    setStatus(`Stich ${programs[idx].prgNum} gespeichert.`);
+  });
+
+  document.getElementById('edit-next').addEventListener('click', () => {
+    if (!saveCurrentToArray()) return;
+    openEditDialog(editingIndex + 1);
+  });
+
+  document.getElementById('edit-cancel').addEventListener('click', () => {
+    document.getElementById('edit-dialog').close();
+  });
+
+  document.getElementById('edit-add').addEventListener('click', () => {
+    const prog = readDialogProgram();
+    const errors = validateProgram(prog);
+    if (errors.length > 0) { showErrors(errors); return; }
+    programs.push(prog);
+    setListDirty(true);
+    saveToStorage();
+    renderTable();
+    document.getElementById('edit-dialog').close();
+    setStatus(`Stich ${prog.prgNum} hinzugefügt.`);
+  });
+
+  document.getElementById('edit-clone').addEventListener('click', () => {
+    const clone = structuredClone(readDialogProgram());
+    clone.prgNum = nextFreeNum();
+    openNewDialog(clone);
+  });
+
+  // ── Dirty field highlighting ──────────────────────────────────────────────
+  const PROG_FIELD_MAP = {
+    'f-prgNum': 'prgNum', 'f-title': 'title', 'f-internalId': 'internalId',
+    'f-printOffset': 'printOffset', 'f-printFormat': 'printFormat', 'f-weapon': 'weapon',
+  };
+
+  document.getElementById('edit-dialog').addEventListener('input', markDirty);
+  document.getElementById('edit-dialog').addEventListener('change', markDirty);
+
+  function markDirty(e) {
+    const el = e.target;
+    if (!editingSnapshot) return;
+
+    let original, target;
+    if (el.dataset.step !== undefined && el.dataset.key !== undefined) {
+      original = editingSnapshot.steps[Number(el.dataset.step)][el.dataset.key];
+      target = el.closest('td');
+    } else if (PROG_FIELD_MAP[el.id] !== undefined) {
+      original = editingSnapshot[PROG_FIELD_MAP[el.id]];
+      target = el;
+    } else { return; }
+
+    let current;
+    if (el.type === 'checkbox') current = el.checked ? 1 : 0;
+    else if (el.tagName === 'SELECT') current = el.dataset.numeric === '1' ? Number(el.value) : el.value;
+    else if (el.type === 'number') current = Number(el.value);
+    else current = el.value;
+
+    target.classList.toggle('modified', String(current) !== String(original));
+  }
+
+  // ── Break nicht erlaubt shortcuts ─────────────────────────────────────────
+  function applyBreakNotAllowed(predicate) {
+    document.querySelectorAll('#steps-body [data-key="breakNotAllowed"]').forEach(cb => {
+      cb.checked = predicate(Number(cb.dataset.step));
+      cb.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  document.getElementById('break-none').addEventListener('click', () => {
+    applyBreakNotAllowed(() => false);
+  });
+
+  document.getElementById('break-from-second').addEventListener('click', () => {
+    applyBreakNotAllowed(i => i > 0);
+  });
+
+  document.getElementById('break-all').addEventListener('click', () => {
+    applyBreakNotAllowed(() => true);
+  });
+
+  document.getElementById('edit-dialog').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.close();
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function buildExportFilename(originalName) {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return originalName.replace(/2\d{3}-\d{2}-\d{2}/, `${y}-${m}-${d}`);
+  }
+
+  function nextFreeNum() {
+    const used = new Set(programs.map(p => p.prgNum));
+    let n = 1;
+    while (used.has(n)) n++;
+    return n;
+  }
+
+  function cell(text, className) {
+    const td = document.createElement('td');
+    td.textContent = text;
+    if (className) td.className = className;
+    return td;
+  }
+
+  function getSelectedIndices() {
+    return [...document.querySelectorAll('.row-cb')]
+      .map((cb, i) => cb.checked ? i : -1)
+      .filter(i => i >= 0);
+  }
+
+  function updateDeleteBtn() {
+    const count = getSelectedIndices().length;
+    const btn = document.getElementById('delete-btn');
+    btn.disabled = count === 0;
+    btn.textContent = count > 0 ? `Stiche löschen (${count})` : 'Stiche löschen';
+  }
+
+  function syncSelectAll() {
+    const cbs = [...document.querySelectorAll('.row-cb')];
+    document.getElementById('select-all').checked =
+      cbs.length > 0 && cbs.every(cb => cb.checked);
+  }
+
+  function showErrors(errors) {
+    const box  = document.getElementById('edit-errors');
+    const list = document.getElementById('edit-errors-list');
+    list.innerHTML = '';
+    for (const e of errors) {
+      const li = document.createElement('li');
+      li.textContent = e;
+      list.appendChild(li);
+    }
+    box.style.display = 'block';
+  }
+
+  function clearErrors() {
+    document.getElementById('edit-errors').style.display = 'none';
+    document.getElementById('edit-errors-list').innerHTML = '';
+  }
+
+  function setStatus(msg, type = '') {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = type;
+  }
+</script>
+
+<!-- PWA:START -->
+<script>
+  // Register the service worker for offline use (ignored on file:// / http
+  // without SW support, e.g. the downloaded single-file build).
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then((reg) => reg.update()).catch(() => {});
+    });
+  }
+</script>
+<!-- PWA:END -->
+
+</body>
+</html>

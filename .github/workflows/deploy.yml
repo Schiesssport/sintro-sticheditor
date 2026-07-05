@@ -1,0 +1,53 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # attach the single-file build to the release
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build self-contained single-file editor
+        run: node build-singlefile.js
+
+      - name: Attach single-file build to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" sintro-sticheditor.html --clobber
+
+      - name: Stage GitHub Pages site
+        run: |
+          mkdir -p _site
+          cp index.html sticheditor.js program.schema.json manifest.webmanifest sw.js icon.svg _site/
+          cp programme_300m_ch.json programme_300m_ch.dat stichliste_300m_ch.md _site/
+          cp sintro-sticheditor.html _site/
+          STAMP="sintro-sticheditor-${{ github.event.release.tag_name || github.sha }}"
+          sed -i "s/__CACHE_VERSION__/${STAMP}/" _site/sw.js
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

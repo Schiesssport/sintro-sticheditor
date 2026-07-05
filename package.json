@@ -1,0 +1,14 @@
+{
+  "name": "sintro-sticheditor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Editor und Programmliste für die Stiche der SINTRO-Trefferanzeige (300 m).",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "dev": "node serve.js",
+    "prod": "STAMP_CACHE=1 node serve.js",
+    "build": "node build-singlefile.js",
+    "dat": "node sticheditor.js"
+  }
+}

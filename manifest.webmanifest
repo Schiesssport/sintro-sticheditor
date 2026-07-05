@@ -1,0 +1,18 @@
+{
+  "name": "Sintro Sticheditor",
+  "short_name": "Sticheditor",
+  "description": "Editor für die Stiche (Schiessprogramme) der SINTRO-Trefferanzeige, 300 m.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ECE9E0",
+  "theme_color": "#213F37",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
