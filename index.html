@@ -83,6 +83,12 @@
     tr.selected td { background: #d3e6dd; }
 
     td.num { text-align: right; }
+    .change-dot {
+      display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+      vertical-align: middle;
+    }
+    .change-dot.changed { background: #e67e22; }
+    .change-dot.new     { background: #27ae60; }
     td.step-active { color: #222; }
     td.step-inactive { color: #ccc; }
 
@@ -134,7 +140,7 @@
       gap: 10px 20px;
       margin-bottom: 18px;
     }
-    .field-group { display: flex; flex-direction: column; gap: 3px; }
+    .field-group { display: flex; flex-direction: column; gap: 3px; position: relative; }
     .field-group label { font-size: 11px; color: #888; }
     .field-group input,
     .field-group select {
@@ -144,6 +150,7 @@
       border: 1px solid #ccc;
       border-radius: 3px;
       width: 100%;
+      background: #fff;
     }
     .field-group input:focus,
     .field-group select:focus { outline: 2px solid #2f7d64; border-color: transparent; }
@@ -173,6 +180,7 @@
       padding: 3px 4px;
       text-align: center;
       vertical-align: middle;
+      position: relative;
     }
     .steps-table td.row-label {
       background: #f7f7f7;
@@ -198,11 +206,22 @@
     .steps-table input[type="text"],
     .steps-table input[type="number"],
     .steps-table select { background: transparent; }
-    .steps-table td.modified { background: #edfaf1; }
+    .steps-table td.changed { background: #fdefe0; }
     .steps-table input:focus { outline: 2px solid #2f7d64; border-color: transparent; }
     .steps-table input.invalid { border-color: #e74c3c; background: #fff5f5; }
-    .prog-fields input.modified,
-    .prog-fields select.modified { background: #edfaf1; }
+    .field-group.changed input,
+    .field-group.changed select { background: #fdefe0; }
+
+    /* Orange ✕ badge marking a field changed since the last export; click to revert */
+    .revert-badge {
+      position: absolute; top: 1px; right: 1px; z-index: 3;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: #e67e22; color: #fff;
+      font-size: 9px; line-height: 13px; text-align: center;
+      cursor: pointer; user-select: none;
+    }
+    .field-group.changed .revert-badge { top: auto; bottom: 5px; right: 4px; }
+    .revert-badge:hover { filter: brightness(1.1); }
     .steps-table select {
       font-family: monospace;
       font-size: 11px;
@@ -240,10 +259,35 @@
     .btn-group .btn:first-child { border-radius: 3px 0 0 3px; }
     .btn-group .btn:last-child  { border-radius: 0 3px 3px 0; border-right: none; }
     .btn.secondary { background: #7f8c8d; }
+    .btn.warn { background: #e67e22; }
+    .btn.warn:hover { filter: brightness(1.1); }
     .btn.success { background: #27ae60; }
     .btn.success:hover { filter: brightness(1.1); }
     .btn.sm { padding: 3px 8px; font-size: 11px; }
     .break-btns { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 11px; color: #666; }
+
+    /* ── Print ── */
+    #print-header { display: none; }
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      body { background: #fff; font-size: 9px; }
+      header, #status, #dirty-badge { display: none !important; }
+      .col-select, .col-edit, .col-status { display: none !important; }
+
+      #print-header {
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding: 0 0 6px; margin-bottom: 6px; border-bottom: 1px solid #000;
+      }
+      #print-header .print-title { font-size: 16px; font-weight: bold; }
+      #print-date { font-size: 11px; }
+
+      .table-wrap { overflow: visible; padding: 0; }
+      table { width: 100%; white-space: normal; }
+      th { background: #eee !important; color: #000 !important; position: static;
+           -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      td, th { border: 1px solid #999; padding: 2px 4px; }
+      tr { break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -260,9 +304,15 @@
     <input type="file" id="file-input" accept=".dat">
   </label>
   <button class="btn" id="export-btn" disabled>.dat exportieren</button>
+  <button class="btn" id="print-btn">Drucken</button>
   <button class="btn danger" id="clear-btn" disabled>Stichliste leeren</button>
   <span id="dirty-badge">● Es existieren nicht exportierte Änderungen</span>
 </header>
+
+<div id="print-header">
+  <span class="print-title">Stichliste</span>
+  <span id="print-date"></span>
+</div>
 
 <div id="status">Keine Datei geladen.</div>
 
@@ -270,8 +320,8 @@
   <table id="programs-table">
     <thead>
       <tr>
-        <th class="center"><input type="checkbox" id="select-all" title="Alle auswählen"></th>
-        <th></th>
+        <th class="center col-select"><input type="checkbox" id="select-all" title="Alle auswählen"></th>
+        <th class="col-edit"></th>
         <th>Nr</th>
         <th>Titel</th>
         <th>Intern</th>
@@ -285,6 +335,7 @@
         <th>Passe 6</th>
         <th>Passe 7</th>
         <th>Passe 8</th>
+        <th class="center col-status" title="Änderungsstatus"></th>
       </tr>
     </thead>
     <tbody id="programs-body"></tbody>
@@ -375,7 +426,7 @@
       <button class="btn success" id="edit-add">Hinzufügen</button>
     </div>
     <div id="edit-nav-btns">
-      <button class="btn secondary" id="edit-undo">Änderungen rücksetzen</button>
+      <button class="btn warn" id="edit-undo">Änderungen zurücksetzen</button>
       <div class="btn-group">
         <button class="btn success" id="edit-prev">← Zurück</button>
         <button class="btn success" id="edit-close">Schliessen</button>
@@ -389,13 +440,15 @@
   import { importDat, exportDat, validateProgram, createProgram, defaultStepInfo } from './sticheditor.js';
 
   const STORAGE_KEY = 'sintro_programs';
+  const BASELINE_KEY = 'sintro_baseline';
   let programs = [];
   let exportFileName = 'Programme.dat';
   let listDirty = false;
+  let baseline = new Map(); // _uid → canonical JSON of last clean state
+  let uidSeq = 0;
 
   // Dialog state
   let editingIndex = -1;    // index into programs[], or -1 in new mode
-  let editingSnapshot = null; // form state to restore on Rückgängig
   let isNewMode = false;
   let tempProgram = null;   // holds unsaved new/cloned program
 
@@ -433,6 +486,7 @@
 
   // ── Storage ──────────────────────────────────────────────────────────────
   function saveToStorage() {
+    ensureUids();
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(programs));
   }
 
@@ -441,9 +495,48 @@
     return raw ? JSON.parse(raw) : [];
   }
 
-  function setListDirty(v) {
-    listDirty = v;
-    document.getElementById('dirty-badge').style.visibility = v ? 'visible' : 'hidden';
+  // ── Change tracking ────────────────────────────────────────────────────────
+  // Each program carries a runtime _uid (ignored by the .dat serializer). The
+  // baseline maps _uid → canonical JSON of the last exported/imported/loaded
+  // "clean" state, so we can tell which programs actually changed — and whether
+  // the list has unexported changes — independent of merely opening a program.
+  function stableStringify(v) {
+    if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+    if (v && typeof v === 'object') {
+      return '{' + Object.keys(v).filter(k => k !== '_uid').sort()
+        .map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+    }
+    return JSON.stringify(v);
+  }
+
+  function ensureUids() {
+    for (const p of programs) if (p._uid != null && p._uid > uidSeq) uidSeq = p._uid;
+    for (const p of programs) if (p._uid == null) p._uid = ++uidSeq;
+  }
+
+  function captureBaseline() {
+    ensureUids();
+    baseline = new Map(programs.map(p => [p._uid, structuredClone(p)]));
+    sessionStorage.setItem(BASELINE_KEY, JSON.stringify([...baseline]));
+  }
+
+  function loadBaseline() {
+    const raw = sessionStorage.getItem(BASELINE_KEY);
+    return raw ? new Map(JSON.parse(raw)) : null;
+  }
+
+  // '' = unchanged, 'new' = added since baseline, 'changed' = edited since baseline
+  function changeState(prog) {
+    if (prog._uid == null || !baseline.has(prog._uid)) return 'new';
+    return stableStringify(baseline.get(prog._uid)) !== stableStringify(prog) ? 'changed' : '';
+  }
+
+  function refreshDirty() {
+    ensureUids();
+    const curSig  = programs.map(p => p._uid).join(',');
+    const baseSig = [...baseline.keys()].join(',');
+    listDirty = curSig !== baseSig || programs.some(p => changeState(p) !== '');
+    document.getElementById('dirty-badge').style.visibility = listDirty ? 'visible' : 'hidden';
   }
 
   window.addEventListener('beforeunload', (e) => {
@@ -454,10 +547,13 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────
   programs = loadFromStorage();
+  const storedBaseline = loadBaseline();
+  if (storedBaseline) { baseline = storedBaseline; ensureUids(); }
+  else { captureBaseline(); }
   renderTable();
+  refreshDirty();
   if (programs.length > 0) {
     setStatus(`${programs.length} Programme aus Sitzungsspeicher geladen.`);
-    setListDirty(true);
   }
 
   // ── File import ──────────────────────────────────────────────────────────
@@ -473,10 +569,11 @@
     try {
       const { programs: loaded, validationErrors } = await importDat(await file.arrayBuffer());
       programs = loaded;
-      renderTable();
-      const errCount = Object.keys(validationErrors).length;
-      setListDirty(true);
+      captureBaseline();
       saveToStorage();
+      renderTable();
+      refreshDirty();
+      const errCount = Object.keys(validationErrors).length;
       setStatus(`${programs.length} Programme geladen${errCount ? ` — ${errCount} Validierungsprobleme` : ''}.`,
                 errCount ? 'error' : '');
     } catch (err) {
@@ -485,14 +582,27 @@
     e.target.value = '';
   });
 
+  // ── Print ────────────────────────────────────────────────────────────────
+  function updatePrintDate() {
+    const now = new Date();
+    document.getElementById('print-date').textContent =
+      now.toLocaleDateString('de-CH') + ' ' +
+      now.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+  }
+  window.addEventListener('beforeprint', updatePrintDate);
+  document.getElementById('print-btn').addEventListener('click', () => {
+    updatePrintDate();
+    window.print();
+  });
+
   // ── Clear list ───────────────────────────────────────────────────────────
   document.getElementById('clear-btn').addEventListener('click', () => {
     if (!confirm(`Alle ${programs.length} Programme löschen und Stichliste leeren?`)) return;
     programs = [];
     exportFileName = 'Programme.dat';
-    setListDirty(false);
     saveToStorage();
     renderTable();
+    refreshDirty();
     setStatus('Stichliste geleert.');
   });
 
@@ -516,7 +626,9 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setListDirty(false);
+      captureBaseline();
+      renderTable();
+      refreshDirty();
       setStatus(`${programs.length} Programme exportiert.`);
     } catch (err) {
       setStatus(`Export fehlgeschlagen: ${err.message}`, 'error');
@@ -529,9 +641,9 @@
     if (!selected.length) return;
     if (!confirm(`${selected.length} Programme löschen?`)) return;
     programs = programs.filter((_, i) => !selected.includes(i));
-    setListDirty(true);
     saveToStorage();
     renderTable();
+    refreshDirty();
     setStatus(`${selected.length} Programme gelöscht.`);
   });
 
@@ -543,6 +655,7 @@
 
   // ── Table render ─────────────────────────────────────────────────────────
   function renderTable() {
+    ensureUids();
     const tbody = document.getElementById('programs-body');
     tbody.innerHTML = '';
     document.getElementById('select-all').checked = false;
@@ -555,7 +668,7 @@
       const tr = document.createElement('tr');
 
       const cbTd = document.createElement('td');
-      cbTd.className = 'center';
+      cbTd.className = 'center col-select';
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.className = 'row-cb';
@@ -568,7 +681,7 @@
       tr.appendChild(cbTd);
 
       const editTd = document.createElement('td');
-      editTd.className = 'center';
+      editTd.className = 'center col-edit';
       const editBtn = document.createElement('button');
       editBtn.className = 'edit-btn';
       editBtn.title = 'Bearbeiten';
@@ -577,7 +690,7 @@
       editTd.appendChild(editBtn);
       tr.appendChild(editTd);
 
-      tr.appendChild(cell(prog.prgNum, 'num'));
+      tr.appendChild(cell(String(prog.prgNum).padStart(3, '0'), 'num'));
       tr.appendChild(cell(prog.title));
       tr.appendChild(cell(prog.internalId));
       tr.appendChild(cell(totalShots, 'num'));
@@ -591,6 +704,17 @@
         }
       }
 
+      const state = changeState(prog);
+      const dotTd = document.createElement('td');
+      dotTd.className = 'center col-status';
+      if (state) {
+        const dot = document.createElement('span');
+        dot.className = `change-dot ${state}`;
+        dot.title = state === 'new' ? 'Neuer Stich' : 'Geänderter Stich';
+        dotTd.appendChild(dot);
+      }
+      tr.appendChild(dotTd);
+
       tbody.appendChild(tr);
     });
   }
@@ -600,7 +724,6 @@
     editingIndex = idx;
     isNewMode = false;
     tempProgram = null;
-    editingSnapshot = structuredClone(programs[idx]);
     document.getElementById('edit-dialog-title').textContent =
       `Stich ${programs[idx].prgNum} bearbeiten`;
     fillDialog(programs[idx]);
@@ -613,7 +736,6 @@
     editingIndex = -1;
     isNewMode = true;
     tempProgram = prog;
-    editingSnapshot = structuredClone(prog);
     document.getElementById('edit-dialog-title').textContent = 'Neuer Stich';
     fillDialog(prog);
     updateDialogButtons();
@@ -629,8 +751,7 @@
     document.getElementById('f-printFormat').value = prog.printFormat;
     document.getElementById('f-weapon').value      = prog.weapon;
     buildStepsBody(prog);
-    // clear any dirty markers left from previous program
-    document.querySelectorAll('#edit-dialog .modified').forEach(el => el.classList.remove('modified'));
+    refreshFieldMarkers();
   }
 
   function updateDialogButtons() {
@@ -763,17 +884,17 @@
     const errors = validateProgram(prog);
     if (errors.length > 0) { showErrors(errors); return false; }
     programs[editingIndex] = prog;
-    editingSnapshot = structuredClone(prog);
-    setListDirty(true);
     saveToStorage();
     renderTable();
+    refreshDirty();
     clearErrors();
     return true;
   }
 
   // ── Dialog button handlers ────────────────────────────────────────────────
   document.getElementById('edit-undo').addEventListener('click', () => {
-    fillDialog(editingSnapshot);
+    const base = baselineProg();
+    if (base) fillDialog(base);
     clearErrors();
   });
 
@@ -783,10 +904,8 @@
   });
 
   document.getElementById('edit-close').addEventListener('click', () => {
-    const idx = editingIndex;
     if (!saveCurrentToArray()) return;
     document.getElementById('edit-dialog').close();
-    setStatus(`Stich ${programs[idx].prgNum} gespeichert.`);
   });
 
   document.getElementById('edit-next').addEventListener('click', () => {
@@ -802,50 +921,92 @@
     const prog = readDialogProgram();
     const errors = validateProgram(prog);
     if (errors.length > 0) { showErrors(errors); return; }
-    programs.push(prog);
-    setListDirty(true);
+    const at = programs.findIndex(p => p.prgNum > prog.prgNum);
+    if (at === -1) programs.push(prog);
+    else programs.splice(at, 0, prog);
     saveToStorage();
     renderTable();
+    refreshDirty();
     document.getElementById('edit-dialog').close();
-    setStatus(`Stich ${prog.prgNum} hinzugefügt.`);
   });
 
   document.getElementById('edit-clone').addEventListener('click', () => {
     const clone = structuredClone(readDialogProgram());
+    delete clone._uid;
     clone.prgNum = nextFreeNum();
     openNewDialog(clone);
   });
 
-  // ── Dirty field highlighting ──────────────────────────────────────────────
+  // ── Per-field change markers (vs. last export) ────────────────────────────
+  // Each dialog field whose value differs from the last exported/imported state
+  // gets an orange ✕ badge; clicking it reverts just that field to that value.
   const PROG_FIELD_MAP = {
     'f-prgNum': 'prgNum', 'f-title': 'title', 'f-internalId': 'internalId',
     'f-printOffset': 'printOffset', 'f-printFormat': 'printFormat', 'f-weapon': 'weapon',
   };
+  const PROG_FIELD_IDS = Object.keys(PROG_FIELD_MAP);
 
-  document.getElementById('edit-dialog').addEventListener('input', markDirty);
-  document.getElementById('edit-dialog').addEventListener('change', markDirty);
-
-  function markDirty(e) {
-    const el = e.target;
-    if (!editingSnapshot) return;
-
-    let original, target;
-    if (el.dataset.step !== undefined && el.dataset.key !== undefined) {
-      original = editingSnapshot.steps[Number(el.dataset.step)][el.dataset.key];
-      target = el.closest('td');
-    } else if (PROG_FIELD_MAP[el.id] !== undefined) {
-      original = editingSnapshot[PROG_FIELD_MAP[el.id]];
-      target = el;
-    } else { return; }
-
-    let current;
-    if (el.type === 'checkbox') current = el.checked ? 1 : 0;
-    else if (el.tagName === 'SELECT') current = el.dataset.numeric === '1' ? Number(el.value) : el.value;
-    else if (el.type === 'number') current = Number(el.value);
-    else current = el.value;
-
-    target.classList.toggle('modified', String(current) !== String(original));
+  // Baseline (last-export) copy of the program currently being edited, or null
+  // (new programs and lists never exported have nothing to compare against).
+  function baselineProg() {
+    if (isNewMode || editingIndex < 0) return null;
+    const uid = programs[editingIndex]?._uid;
+    return uid != null ? baseline.get(uid) : null;
   }
+
+  function editableControls() {
+    return document.querySelectorAll(
+      '#steps-body [data-step][data-key], ' + PROG_FIELD_IDS.map(id => '#' + id).join(', '));
+  }
+
+  function controlContainer(el) {
+    return el.dataset.step !== undefined ? el.closest('td') : el.closest('.field-group');
+  }
+
+  function baseValueFor(el, base) {
+    if (el.dataset.step !== undefined) return base.steps[Number(el.dataset.step)][el.dataset.key];
+    const key = PROG_FIELD_MAP[el.id];
+    return key !== undefined ? base[key] : undefined;
+  }
+
+  function controlValue(el) {
+    if (el.type === 'checkbox') return el.checked ? 1 : 0;
+    if (el.tagName === 'SELECT') return el.dataset.numeric === '1' ? Number(el.value) : el.value;
+    if (el.type === 'number') return Number(el.value);
+    return el.value;
+  }
+
+  function setControlValue(el, val) {
+    if (el.type === 'checkbox') el.checked = val === 1;
+    else el.value = val;
+    el.dispatchEvent(new Event('input',  { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function refreshFieldMarkers() {
+    document.querySelectorAll('#edit-dialog .revert-badge').forEach(b => b.remove());
+    const base = baselineProg();
+    editableControls().forEach(el => {
+      const container = controlContainer(el);
+      let changed = false;
+      if (base) {
+        const bv = baseValueFor(el, base);
+        changed = bv !== undefined && String(controlValue(el)) !== String(bv);
+      }
+      container.classList.toggle('changed', changed);
+      if (changed) {
+        const badge = document.createElement('span');
+        badge.className = 'revert-badge';
+        badge.title = 'Auf zuletzt exportierten Wert zurücksetzen';
+        badge.textContent = '✕';
+        badge.addEventListener('click', () => setControlValue(el, baseValueFor(el, base)));
+        container.appendChild(badge);
+      }
+    });
+  }
+
+  document.getElementById('edit-dialog').addEventListener('input', refreshFieldMarkers);
+  document.getElementById('edit-dialog').addEventListener('change', refreshFieldMarkers);
 
   // ── Break nicht erlaubt shortcuts ─────────────────────────────────────────
   function applyBreakNotAllowed(predicate) {
