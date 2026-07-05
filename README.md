@@ -92,6 +92,15 @@ node sticheditor.js json-to-dat in.json out.dat   # validates first
 regenerate the `.dat` with `json-to-dat`. `stichliste_300m_ch.md` documents the
 standard programs and the SINTRO conventions (section *SINTRO-spezifisch*).
 
+The JSON is a versioned envelope shared by the files, the CLI, the app's session
+storage, and clipboard copy/paste:
+
+```json
+{ "format": "sintro-programs", "version": 1, "programs": [ /* … */ ] }
+```
+
+See `program.schema.json`.
+
 Program numbers: `1–99` club-internal, `101–199` regional, `200+` Swiss standard
 programs. Data model details: `program.schema.json`.
 

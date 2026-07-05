@@ -372,13 +372,33 @@ class DatParser {
 }
 
 // ---------------------------------------------------------------------------
+// Program-list JSON format — a self-identifying, versioned envelope shared by
+// the JSON files (programme_300m_ch.json, CLI output), the app's sessionStorage,
+// and the clipboard copy/paste. `wrapPrograms` produces it, `unwrapPrograms`
+// reads it.
+// ---------------------------------------------------------------------------
+export const STICHE_FORMAT = 'sintro-programs';
+export const STICHE_VERSION = 1;
+
+export function wrapPrograms(programs) {
+  return { format: STICHE_FORMAT, version: STICHE_VERSION, programs };
+}
+
+// Returns the programs array from an envelope, or null if the value isn't a
+// recognizable program list.
+export function unwrapPrograms(data) {
+  if (data && typeof data === 'object' && Array.isArray(data.programs)) return data.programs;
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // ProgramStore — persistence (browser: sessionStorage, Node: JSON file)
 // ---------------------------------------------------------------------------
 class ProgramStore {
   static STORAGE_KEY = 'sintro_programs';
 
   static async save(programs, filePath = 'programs.json') {
-    const json = JSON.stringify(programs, null, 2);
+    const json = JSON.stringify(wrapPrograms(programs), null, 2);
     if (ProgramStore.#isNode()) {
       const { writeFileSync } = await import('fs');
       writeFileSync(filePath, json, 'utf8');
@@ -391,10 +411,15 @@ class ProgramStore {
   static async load(filePath = 'programs.json') {
     if (ProgramStore.#isNode()) {
       const { readFileSync } = await import('fs');
-      return JSON.parse(readFileSync(filePath, 'utf8'));
+      const programs = unwrapPrograms(JSON.parse(readFileSync(filePath, 'utf8')));
+      if (programs == null) {
+        throw new Error(`Unrecognized JSON in ${filePath}: expected ` +
+          `{ format: "${STICHE_FORMAT}", version: ${STICHE_VERSION}, programs: [...] }.`);
+      }
+      return programs;
     } else {
       const json = sessionStorage.getItem(ProgramStore.STORAGE_KEY);
-      return json ? JSON.parse(json) : [];
+      return json ? (unwrapPrograms(JSON.parse(json)) ?? []) : [];
     }
   }
 

@@ -80,7 +80,6 @@
 
     td { padding: 3px 8px; border-bottom: 1px solid #e8e8e8; vertical-align: middle; }
     tr:hover td { background: #e9f1ed; }
-    tr.selected td { background: #d3e6dd; }
 
     td.num { text-align: right; }
     .change-dot {
@@ -266,6 +265,41 @@
     .btn.sm { padding: 3px 8px; font-size: 11px; }
     .break-btns { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 11px; color: #666; }
 
+    /* ── Paste dialog ── */
+    .paste-intro { font-size: 11px; color: #666; margin-bottom: 12px; max-width: 520px; line-height: 1.5; }
+    .paste-table { border-collapse: collapse; width: 100%; }
+    .paste-table th {
+      background: #2d5548; color: #fff; font-weight: normal;
+      font-size: 12px; padding: 5px 8px; text-align: left;
+    }
+    .paste-table th:first-child { text-align: center; }
+    .paste-table td { border-bottom: 1px solid #eee; padding: 4px 8px; vertical-align: middle; }
+    .paste-table td.center { text-align: center; }
+    .paste-table td.num { text-align: right; }
+    .paste-table input[type="text"],
+    .paste-table input[type="number"] {
+      font-family: monospace; font-size: 12px; padding: 3px 5px;
+      border: 1px solid #ccc; border-radius: 2px; background: #fff;
+    }
+    .paste-table input.num-input { width: 66px; text-align: right; }
+    .paste-table input.title-input { width: 100%; min-width: 220px; }
+    .paste-table input:focus { outline: 2px solid #2f7d64; border-color: transparent; }
+    .paste-table input.taken { border-color: #e74c3c; background: #fff5f5; }
+    .paste-table input.overwrite { border-color: #e67e22; background: #fff8f0; }
+    .paste-table tr.excluded { opacity: 0.4; }
+    .paste-num-note { color: #c0392b; font-size: 10px; display: block; margin-top: 2px; }
+    .paste-num-note.warn { color: #e67e22; }
+    .paste-overwrite {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: #666; cursor: pointer; user-select: none;
+    }
+    #paste-input-text {
+      width: 100%; min-width: min(70vw, 560px); box-sizing: border-box;
+      font-family: monospace; font-size: 12px; padding: 8px;
+      border: 1px solid #ccc; border-radius: 3px; resize: vertical;
+    }
+    #paste-input-text:focus { outline: 2px solid #2f7d64; border-color: transparent; }
+
     /* ── Print ── */
     #print-header { display: none; }
     @media print {
@@ -296,6 +330,8 @@
   <h1>Sticheditor</h1>
   <button class="btn success" id="new-btn">+ Neuer Stich</button>
   <button class="btn danger" id="delete-btn" disabled>Stiche löschen</button>
+  <button class="btn" id="copy-btn" disabled>Stiche kopieren</button>
+  <button class="btn" id="paste-btn">Stiche einfügen</button>
 
   <span class="header-spacer"></span>
 
@@ -436,8 +472,69 @@
   </div>
 </dialog>
 
+<!-- Paste dialog -->
+<dialog id="paste-dialog">
+  <div class="dialog-header">Stiche einfügen</div>
+  <div class="dialog-body">
+    <p class="paste-intro">
+      Nummer und Titel können vor dem Einfügen angepasst werden. Bereits
+      vergebene oder doppelte Nummern sind rot markiert und müssen zuerst
+      geändert werden — oder aktivieren Sie unten „Bestehende überschreiben“,
+      um Stiche mit gleicher Nummer zu ersetzen.
+    </p>
+    <table class="paste-table">
+      <thead>
+        <tr>
+          <th class="center"><input type="checkbox" id="paste-select-all" checked title="Alle auswählen"></th>
+          <th>Nr</th>
+          <th>Titel</th>
+          <th>Schüsse</th>
+          <th>Passen</th>
+        </tr>
+      </thead>
+      <tbody id="paste-body"></tbody>
+    </table>
+    <div class="dialog-errors" id="paste-errors">
+      <strong>Validierungsfehler:</strong>
+      <ul id="paste-errors-list"></ul>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <label class="paste-overwrite">
+      <input type="checkbox" id="paste-overwrite">
+      Bestehende überschreiben
+    </label>
+    <div class="footer-spacer"></div>
+    <button class="btn secondary" id="paste-cancel">Abbrechen</button>
+    <button class="btn success" id="paste-confirm">Einfügen</button>
+  </div>
+</dialog>
+
+<!-- Manual-paste fallback (when the clipboard API is unavailable) -->
+<dialog id="paste-input-dialog">
+  <div class="dialog-header">Stiche einfügen</div>
+  <div class="dialog-body">
+    <p class="paste-intro">
+      Fügen Sie die kopierten Stich-Daten (JSON) unten ein (Strg+V). Sobald
+      gültige Daten erkannt werden, geht es automatisch weiter — andernfalls auf
+      „Weiter“ klicken.
+    </p>
+    <textarea id="paste-input-text" rows="10" spellcheck="false"
+      placeholder="JSON hier einfügen …"></textarea>
+    <div class="dialog-errors" id="paste-input-error">
+      <strong>Fehler:</strong> <span id="paste-input-error-msg"></span>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <div class="footer-spacer"></div>
+    <button class="btn secondary" id="paste-input-cancel">Abbrechen</button>
+    <button class="btn success" id="paste-input-next">Weiter</button>
+  </div>
+</dialog>
+
 <script type="module">
-  import { importDat, exportDat, validateProgram, createProgram, defaultStepInfo } from './sticheditor.js';
+  import { importDat, exportDat, validateProgram, createProgram, defaultStepInfo,
+           wrapPrograms, unwrapPrograms } from './sticheditor.js';
 
   const STORAGE_KEY = 'sintro_programs';
   const BASELINE_KEY = 'sintro_baseline';
@@ -446,6 +543,7 @@
   let listDirty = false;
   let baseline = new Map(); // _uid → canonical JSON of last clean state
   let uidSeq = 0;
+  let lastCheckedIndex = -1; // anchor row for shift-click range selection
 
   // Dialog state
   let editingIndex = -1;    // index into programs[], or -1 in new mode
@@ -487,12 +585,12 @@
   // ── Storage ──────────────────────────────────────────────────────────────
   function saveToStorage() {
     ensureUids();
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(programs));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(wrapPrograms(programs)));
   }
 
   function loadFromStorage() {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return raw ? (unwrapPrograms(JSON.parse(raw)) ?? []) : [];
   }
 
   // ── Change tracking ────────────────────────────────────────────────────────
@@ -511,6 +609,10 @@
 
   function ensureUids() {
     for (const p of programs) if (p._uid != null && p._uid > uidSeq) uidSeq = p._uid;
+    // Also clear the high-water mark past stale baseline uids: after clearing an
+    // imported list the baseline still holds its old uids, and reassigning those
+    // to freshly added/pasted programs would wrongly mark them as "changed".
+    for (const uid of baseline.keys()) if (uid > uidSeq) uidSeq = uid;
     for (const p of programs) if (p._uid == null) p._uid = ++uidSeq;
   }
 
@@ -535,7 +637,9 @@
     ensureUids();
     const curSig  = programs.map(p => p._uid).join(',');
     const baseSig = [...baseline.keys()].join(',');
-    listDirty = curSig !== baseSig || programs.some(p => changeState(p) !== '');
+    // An empty list has nothing to export, so it's never "dirty".
+    listDirty = programs.length > 0 &&
+      (curSig !== baseSig || programs.some(p => changeState(p) !== ''));
     document.getElementById('dirty-badge').style.visibility = listDirty ? 'visible' : 'hidden';
   }
 
@@ -647,6 +751,295 @@
     setStatus(`${selected.length} Programme gelöscht.`);
   });
 
+  // ── Copy / paste between instances ────────────────────────────────────────
+  // Copy serialises the selected programs to the clipboard in the same envelope
+  // format as the JSON files (wrapPrograms); paste reads it back (in another
+  // browser/instance) and opens a dialog to pick, renumber and rename them
+  // before inserting. Bare arrays are still accepted on paste for compatibility.
+  document.getElementById('copy-btn').addEventListener('click', async () => {
+    const selected = getSelectedIndices();
+    if (!selected.length) return;
+    const picked = selected.map(i => {
+      const clone = structuredClone(programs[i]);
+      delete clone._uid;
+      return clone;
+    });
+    const text = JSON.stringify(wrapPrograms(picked), null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatus(`${picked.length} Stiche in die Zwischenablage kopiert.`);
+    } catch (_) {
+      setStatus('Kopieren fehlgeschlagen — Zwischenablage nicht verfügbar.', 'error');
+    }
+  });
+
+  // Parses pasted text into a validated programs array, or null if it isn't a
+  // recognizable Stich list.
+  function parsePasteText(text) {
+    let parsed;
+    try { parsed = JSON.parse(text); } catch (_) { return null; }
+    const list = unwrapPrograms(parsed);
+    const valid = Array.isArray(list) && list.length > 0 &&
+      list.every(p => p && typeof p === 'object' && 'prgNum' in p && Array.isArray(p.steps));
+    return valid ? list : null;
+  }
+
+  // True only where the clipboard can be read cleanly. We probe via the
+  // Permissions API rather than calling readText(): the 'clipboard-read'
+  // descriptor is valid in Chromium but throws in Firefox (which would
+  // otherwise pop a native paste menu), so this detects support without any
+  // side effects.
+  async function clipboardReadAvailable() {
+    if (!navigator.clipboard?.readText || !navigator.permissions?.query) return false;
+    try {
+      const status = await navigator.permissions.query({ name: 'clipboard-read' });
+      return status.state !== 'denied';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  document.getElementById('paste-btn').addEventListener('click', async () => {
+    // Where the clipboard API works, read it directly (one click). Otherwise
+    // fall back to the manual paste box — no fancy workarounds.
+    if (await clipboardReadAvailable()) {
+      try {
+        const list = parsePasteText(await navigator.clipboard.readText());
+        if (list) { openPasteDialog(list); return; }
+      } catch (_) { /* fall through to the manual box */ }
+    }
+    openPasteInput();
+  });
+
+  // Manual paste: show a textarea for the user to paste JSON into. It auto-
+  // advances to the paste dialog as soon as the content is a valid Stich list.
+  function openPasteInput() {
+    const ta = document.getElementById('paste-input-text');
+    ta.value = '';
+    showPasteInputError('');
+    document.getElementById('paste-input-dialog').showModal();
+    setTimeout(() => ta.focus(), 0);
+  }
+
+  function showPasteInputError(msg) {
+    const box = document.getElementById('paste-input-error');
+    document.getElementById('paste-input-error-msg').textContent = msg || '';
+    box.style.display = msg ? 'block' : 'none';
+  }
+
+  document.getElementById('paste-input-text').addEventListener('input', () => {
+    const list = parsePasteText(document.getElementById('paste-input-text').value);
+    if (list) {
+      document.getElementById('paste-input-dialog').close();
+      openPasteDialog(list);
+    } else {
+      showPasteInputError('');  // clear stale error while the user edits
+    }
+  });
+
+  document.getElementById('paste-input-next').addEventListener('click', () => {
+    const list = parsePasteText(document.getElementById('paste-input-text').value);
+    if (!list) { showPasteInputError('Keine gültigen Stich-Daten erkannt.'); return; }
+    document.getElementById('paste-input-dialog').close();
+    openPasteDialog(list);
+  });
+
+  document.getElementById('paste-input-cancel').addEventListener('click', () => {
+    document.getElementById('paste-input-dialog').close();
+  });
+
+  document.getElementById('paste-input-dialog').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.close();
+  });
+
+  function openPasteDialog(list) {
+    const tbody = document.getElementById('paste-body');
+    tbody.innerHTML = '';
+    clearPasteErrors();
+    document.getElementById('paste-select-all').checked = true;
+    document.getElementById('paste-overwrite').checked = false; // protective: off by default
+
+    list.forEach(prog => {
+      const clone = structuredClone(prog);
+      delete clone._uid;
+      const totalShots  = clone.steps.reduce((s, p) => s + (p.shotNum || 0), 0);
+      const activePasses = clone.steps.filter(p => p.shotNum > 0).length;
+
+      const tr = document.createElement('tr');
+      tr.className = 'paste-row';
+
+      const cbTd = document.createElement('td');
+      cbTd.className = 'center';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.addEventListener('change', () => {
+        tr.classList.toggle('excluded', !cb.checked);
+        syncPasteSelectAll();
+        refreshPasteState();
+      });
+      cbTd.appendChild(cb);
+      tr.appendChild(cbTd);
+
+      const numTd = document.createElement('td');
+      const num = document.createElement('input');
+      num.type = 'number'; num.min = 1; num.max = 999;
+      num.className = 'num-input';
+      num.value = clone.prgNum;
+      num.addEventListener('input', refreshPasteState);
+      const note = document.createElement('span');
+      note.className = 'paste-num-note';
+      note.style.display = 'none';
+      numTd.appendChild(num);
+      numTd.appendChild(note);
+      tr.appendChild(numTd);
+
+      const titleTd = document.createElement('td');
+      const title = document.createElement('input');
+      title.type = 'text'; title.maxLength = 28;
+      title.className = 'title-input';
+      title.value = clone.title || '';
+      titleTd.appendChild(title);
+      tr.appendChild(titleTd);
+
+      tr.appendChild(cell(totalShots, 'num'));
+      tr.appendChild(cell(activePasses, 'num'));
+
+      tr._prog = clone; tr._cb = cb; tr._num = num; tr._title = title; tr._note = note;
+      tbody.appendChild(tr);
+    });
+
+    refreshPasteState();
+    document.getElementById('paste-dialog').showModal();
+  }
+
+  function pasteRows() {
+    return [...document.querySelectorAll('#paste-body .paste-row')];
+  }
+
+  // Highlights numbers and blocks the insert button until every selected
+  // program has a valid, non-conflicting number. Collisions with existing
+  // programs are blocking (red) unless "Bestehende überschreiben" is enabled,
+  // in which case they are flagged as an overwrite (orange, non-blocking).
+  // Duplicates among the pasted rows and invalid numbers always block.
+  function refreshPasteState() {
+    const rows = pasteRows();
+    const overwrite = document.getElementById('paste-overwrite').checked;
+    const existing = new Set(programs.map(p => p.prgNum));
+    const included = rows.filter(r => r._cb.checked);
+    const counts = new Map();
+    included.forEach(r => {
+      const n = Number(r._num.value);
+      counts.set(n, (counts.get(n) || 0) + 1);
+    });
+
+    let anyBad = false;
+    rows.forEach(r => {
+      const n = Number(r._num.value);
+      const valid = Number.isInteger(n) && n >= 1 && n <= 999;
+      let reason = '';  // red, blocking
+      let warn   = '';  // orange, non-blocking
+      if (r._cb.checked) {
+        if (!valid) reason = 'ungültig';
+        else if (counts.get(n) > 1) reason = 'doppelt';
+        else if (existing.has(n)) { if (overwrite) warn = 'überschreibt'; else reason = 'bereits vergeben'; }
+      }
+      r._num.classList.toggle('taken', reason !== '');
+      r._num.classList.toggle('overwrite', warn !== '');
+      r._note.textContent = reason || warn;
+      r._note.classList.toggle('warn', reason === '' && warn !== '');
+      r._note.style.display = (reason || warn) ? 'block' : 'none';
+      if (reason) anyBad = true;
+    });
+
+    document.getElementById('paste-confirm').disabled = anyBad || included.length === 0;
+  }
+
+  document.getElementById('paste-overwrite').addEventListener('change', refreshPasteState);
+
+  function syncPasteSelectAll() {
+    const rows = pasteRows();
+    document.getElementById('paste-select-all').checked =
+      rows.length > 0 && rows.every(r => r._cb.checked);
+  }
+
+  document.getElementById('paste-select-all').addEventListener('change', (e) => {
+    pasteRows().forEach(r => {
+      r._cb.checked = e.target.checked;
+      r.classList.toggle('excluded', !e.target.checked);
+    });
+    refreshPasteState();
+  });
+
+  document.getElementById('paste-confirm').addEventListener('click', () => {
+    const rows = pasteRows().filter(r => r._cb.checked);
+    const toAdd = rows.map(r => {
+      const prog = structuredClone(r._prog);
+      delete prog._uid;
+      prog.prgNum = Number(r._num.value);
+      prog.title  = r._title.value;
+      return prog;
+    });
+
+    const errors = [];
+    for (const prog of toAdd) {
+      const errs = validateProgram(prog);
+      if (errs.length) errors.push(`Nr ${prog.prgNum}: ${errs.join('; ')}`);
+    }
+    if (errors.length) { showPasteErrors(errors); return; }
+
+    let added = 0, overwritten = 0;
+    for (const prog of toAdd) {
+      const existingIdx = programs.findIndex(p => p.prgNum === prog.prgNum);
+      if (existingIdx !== -1) {
+        // Overwrite: keep the existing program's identity so change tracking
+        // marks it as "changed" against the last export rather than "new".
+        prog._uid = programs[existingIdx]._uid;
+        programs[existingIdx] = prog;
+        overwritten++;
+      } else {
+        const at = programs.findIndex(p => p.prgNum > prog.prgNum);
+        if (at === -1) programs.push(prog);
+        else programs.splice(at, 0, prog);
+        added++;
+      }
+    }
+    ensureUids();
+    saveToStorage();
+    renderTable();
+    refreshDirty();
+    document.getElementById('paste-dialog').close();
+    const parts = [];
+    if (added) parts.push(`${added} eingefügt`);
+    if (overwritten) parts.push(`${overwritten} überschrieben`);
+    setStatus(`Stiche: ${parts.join(', ')}.`);
+  });
+
+  document.getElementById('paste-cancel').addEventListener('click', () => {
+    document.getElementById('paste-dialog').close();
+  });
+
+  document.getElementById('paste-dialog').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.close();
+  });
+
+  function showPasteErrors(errors) {
+    const box  = document.getElementById('paste-errors');
+    const list = document.getElementById('paste-errors-list');
+    list.innerHTML = '';
+    for (const e of errors) {
+      const li = document.createElement('li');
+      li.textContent = e;
+      list.appendChild(li);
+    }
+    box.style.display = 'block';
+  }
+
+  function clearPasteErrors() {
+    document.getElementById('paste-errors').style.display = 'none';
+    document.getElementById('paste-errors-list').innerHTML = '';
+  }
+
   // ── Select all ───────────────────────────────────────────────────────────
   document.getElementById('select-all').addEventListener('change', (e) => {
     document.querySelectorAll('.row-cb').forEach(cb => cb.checked = e.target.checked);
@@ -658,6 +1051,7 @@
     ensureUids();
     const tbody = document.getElementById('programs-body');
     tbody.innerHTML = '';
+    lastCheckedIndex = -1;
     document.getElementById('select-all').checked = false;
     document.getElementById('export-btn').disabled = programs.length === 0;
     document.getElementById('clear-btn').disabled = programs.length === 0;
@@ -672,8 +1066,23 @@
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.className = 'row-cb';
+      cb.addEventListener('click', (e) => {
+        // Shift-click extends the range from the last clicked row, matching the
+        // clicked box's new state.
+        if (e.shiftKey && lastCheckedIndex !== -1 && lastCheckedIndex !== idx) {
+          const cbs = [...document.querySelectorAll('.row-cb')];
+          const lo = Math.min(lastCheckedIndex, idx);
+          const hi = Math.max(lastCheckedIndex, idx);
+          for (let i = lo; i <= hi; i++) {
+            cbs[i].checked = cb.checked;
+          }
+          window.getSelection()?.removeAllRanges();
+          syncSelectAll();
+          updateDeleteBtn();
+        }
+        lastCheckedIndex = idx;
+      });
       cb.addEventListener('change', () => {
-        tr.classList.toggle('selected', cb.checked);
         syncSelectAll();
         updateDeleteBtn();
       });
@@ -1066,6 +1475,9 @@
     const btn = document.getElementById('delete-btn');
     btn.disabled = count === 0;
     btn.textContent = count > 0 ? `Stiche löschen (${count})` : 'Stiche löschen';
+    const copyBtn = document.getElementById('copy-btn');
+    copyBtn.disabled = count === 0;
+    copyBtn.textContent = count > 0 ? `Stiche kopieren (${count})` : 'Stiche kopieren';
   }
 
   function syncSelectAll() {

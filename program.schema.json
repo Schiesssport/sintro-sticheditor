@@ -2,9 +2,27 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sintro.local/schemas/program.schema.json",
   "title": "Sintro Sticheditor Program List",
-  "description": "List of shooting programs (\"Stiche\") for the Sintro Trefferanzeige device. The on-device format is a binary .dat file with fixed 328-byte records; this schema describes the JSON representation used by the editor app and CLI. Each program defines up to 8 sequential stages (\"Passen\"), where each stage specifies a target silhouette, scoring, fire method, posture, and optional series-fire timing. NOTE: one cross-field rule is NOT expressible in JSON Schema — once a step has shotNum=0, every following step must also have shotNum=0 (no gaps between active stages). The runtime validator in sticheditor.js enforces this.",
-  "type": "array",
-  "items": { "$ref": "#/$defs/program" },
+  "description": "List of shooting programs (\"Stiche\") for the Sintro Trefferanzeige device. The on-device format is a binary .dat file with fixed 328-byte records; this schema describes the JSON representation used by the editor app, the CLI, and clipboard copy/paste. The list is a self-identifying, versioned envelope: { \"format\": \"sintro-programs\", \"version\": 1, \"programs\": [ ... ] }. Each program defines up to 8 sequential stages (\"Passen\"), where each stage specifies a target silhouette, scoring, fire method, posture, and optional series-fire timing. NOTE: one cross-field rule is NOT expressible in JSON Schema — once a step has shotNum=0, every following step must also have shotNum=0 (no gaps between active stages). The runtime validator in sticheditor.js enforces this.",
+  "type": "object",
+  "required": ["format", "version", "programs"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "sintro-programs",
+      "description": "Format discriminator. Always the literal \"sintro-programs\"; lets readers (e.g. clipboard paste) recognize the payload as a program list."
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Format version. Currently 1. Bumped only on breaking changes to the envelope or program shape."
+    },
+    "programs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/program" },
+      "description": "The shooting programs, in list order (the app keeps them sorted by prgNum)."
+    }
+  },
 
   "$defs": {
     "letter": {

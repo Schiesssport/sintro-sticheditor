@@ -72,6 +72,11 @@ conventions below). All derived fields are already baked into the JSON — the
 only rule that stays runtime is `defaultStepInfo`, which fills an empty `info`
 at serialize time.
 
+The JSON list is a versioned envelope — `{ "format": "sintro-programs",
+"version": 1, "programs": [ … ] }` — shared by the files, the CLI,
+sessionStorage, and clipboard copy/paste. `wrapPrograms`/`unwrapPrograms` in
+`sticheditor.js` produce/read it. Schema: `program.schema.json`.
+
 ## SINTRO conventions (already baked into the JSON)
 
 The Markdown reference uses a step shorthand `<sil><calc><fireMethod><shotNum>`
