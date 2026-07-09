@@ -31,6 +31,13 @@ Es gibt zwei Wege, die App zu nutzen:
    Datei `sintro-sticheditor.html` herunterladen und per Doppelklick öffnen — eine
    einzige Datei, komplett offline, kein Server nötig.
 
+**Standardprogramme (Schweiz):** Die offiziellen 300-m-Standardstiche sind
+gebrauchsfertig verfügbar — [`programme_300m_ch.dat`
+herunterladen](https://github.com/Schiesssport/sintro-sticheditor/raw/main/programme_300m_ch.dat)
+und in der App (oder direkt aufs Gerät) laden. Eine menschenlesbare Übersicht
+aller Programme mit Schritten, Notizen und SINTRO-Konventionen bietet die
+[Stichliste 300m (Referenz)](stichliste_300m_ch.md).
+
 Die App ist auf **Deutsch, Französisch und Englisch** verfügbar. Die Sprache
 wird automatisch aus dem Browser erkannt und lässt sich oben rechts umschalten.
 
