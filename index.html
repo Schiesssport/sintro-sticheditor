@@ -549,7 +549,8 @@
 
 <script type="module">
   import { importDat, exportDat, validateProgram, formatValidationError,
-           createProgram, defaultStepInfo, wrapPrograms, unwrapPrograms } from './sticheditor.js';
+           createProgram, defaultStepInfo, wrapPrograms, unwrapPrograms,
+           collectListWarnings, CALIBRATION_PRG_NUM } from './sticheditor.js';
 
   const byId = (id) => document.getElementById(id);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -631,12 +632,13 @@
       confirmReplaceList: 'Replace the current program list ({n} programs)?',
       confirmClear: 'Delete all {n} programs and clear the list?',
       confirmDelete: 'Delete {n} programs?',
+      confirmExportNoCalib: 'This program list has no calibration program (no. {num}). Without it, the device cannot load the list. Export anyway?',
     },
     de: {
       btnNew: '+ Neuer Stich', btnDelete: 'Stiche löschen', btnCopy: 'Stiche kopieren',
       btnPaste: 'Stiche einfügen', btnLoadDat: '.dat laden', btnExportDat: '.dat exportieren',
       btnPrint: 'Drucken', btnClear: 'Stichliste leeren', dirtyBadge: '● Es existieren nicht exportierte Änderungen',
-      langLabel: 'Sprache', printTitle: 'Stichliste', exportBaseName: 'Stiche',
+      langLabel: 'Sprache', printTitle: 'Stichliste', exportBaseName: 'Programme',
       thSelectAll: 'Alle auswählen', thNr: 'Nr', thTitle: 'Titel', thInternal: 'Intern',
       thShots: 'Schüsse', thFormat: 'Format', thStatus: 'Änderungsstatus',
       stage: 'Passe', colStages: 'Passen',
@@ -688,6 +690,7 @@
       confirmReplaceList: 'Aktuelle Stichliste ({n} Programme) ersetzen?',
       confirmClear: 'Alle {n} Programme löschen und Stichliste leeren?',
       confirmDelete: '{n} Programme löschen?',
+      confirmExportNoCalib: 'Diese Stichliste enthält kein Kalibrierprogramm (Nr. {num}). Ohne dieses kann die Liste nicht vom Gerät geladen werden. Trotzdem exportieren?',
     },
     fr: {
       btnNew: '+ Nouveau programme', btnDelete: 'Supprimer les programmes', btnCopy: 'Copier les programmes',
@@ -745,6 +748,7 @@
       confirmReplaceList: 'Remplacer la liste de programmes actuelle ({n} programmes) ?',
       confirmClear: 'Supprimer les {n} programmes et vider la liste ?',
       confirmDelete: 'Supprimer {n} programmes ?',
+      confirmExportNoCalib: 'Cette liste de programmes ne contient aucun programme d’étalonnage (n° {num}). Sans celui-ci, l’appareil ne peut pas charger la liste. Exporter quand même ?',
     },
   };
 
@@ -944,6 +948,8 @@
 
   // ── Export ───────────────────────────────────────────────────────────────
   byId('export-btn').addEventListener('click', async () => {
+    if (collectListWarnings(programs).length &&
+        !confirm(t('confirmExportNoCalib', { num: CALIBRATION_PRG_NUM }))) return;
     try {
       const buffer = await exportDat();
       const bytes = new Uint8Array(buffer);

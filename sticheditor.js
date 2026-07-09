@@ -123,6 +123,7 @@ export const VALIDATION_MESSAGES = {
     stepCalcHighscore: 'Stage {step}: low-shot flag must be 0 or 1 (is: {value})',
     stepPosition: 'Stage {step}: position must be 0 (prone), 1 (kneeling) or 2 (standing) (is: {value})',
     stepBreakNotAllowed: 'Stage {step}: "no break" must be 0 or 1 (is: {value})',
+    missingCalibrationProgram: 'This program list needs a calibration program with number {num} in order to be loadable by the device.',
   },
   de: {
     prgNumRange: 'Stichnummer muss eine ganze Zahl zwischen 1 und 999 sein (ist: {value})',
@@ -151,6 +152,7 @@ export const VALIDATION_MESSAGES = {
     stepCalcHighscore: 'Passe {step}: Tiefschuss muss 0 oder 1 sein (ist: {value})',
     stepPosition: 'Passe {step}: Stellung muss 0 (liegend), 1 (kniend) oder 2 (stehend) sein (ist: {value})',
     stepBreakNotAllowed: 'Passe {step}: „Break nicht erlaubt“ muss 0 oder 1 sein (ist: {value})',
+    missingCalibrationProgram: 'Diese Programmliste benötigt ein Kalibrierprogramm mit der Stichnummer {num}, damit sie vom Gerät geladen werden kann.',
   },
   fr: {
     prgNumRange: 'Le numéro de programme doit être un entier entre 1 et 999 (valeur : {value})',
@@ -179,6 +181,7 @@ export const VALIDATION_MESSAGES = {
     stepCalcHighscore: 'Passe {step} : l’indicateur coups bas doit être 0 ou 1 (valeur : {value})',
     stepPosition: 'Passe {step} : la position doit être 0 (couché), 1 (à genou) ou 2 (debout) (valeur : {value})',
     stepBreakNotAllowed: 'Passe {step} : « pas de pause » doit être 0 ou 1 (valeur : {value})',
+    missingCalibrationProgram: 'Cette liste de programmes nécessite un programme d’étalonnage portant le numéro {num} pour pouvoir être chargée par l’appareil.',
   },
 };
 
@@ -445,6 +448,16 @@ function collectValidationErrors(programs) {
   return validationErrors;
 }
 
+export const CALIBRATION_PRG_NUM = 100;
+
+export function collectListWarnings(programs) {
+  const warnings = [];
+  if (!programs.some(p => p.prgNum === CALIBRATION_PRG_NUM)) {
+    warnings.push({ code: 'missingCalibrationProgram', params: { num: CALIBRATION_PRG_NUM } });
+  }
+  return warnings;
+}
+
 // ── Node CLI (only when run directly) ────────────────────────────────────────
 //   node sticheditor.js dat-to-json <input.dat>  <output.json>
 //   node sticheditor.js json-to-dat <input.json> <output.dat>
@@ -469,6 +482,9 @@ if (isNode()) {
         log(`  Program ${num}:\n    ${errs.map(e => formatValidationError(e, 'en')).join('\n    ')}`);
       }
     };
+    const printWarnings = (programs) => {
+      for (const w of collectListWarnings(programs)) console.warn(`Warning: ${formatValidationError(w, 'en')}`);
+    };
 
     if (command === 'dat-to-json') {
       if (!inFile || !outFile) { console.error(USAGE); process.exit(1); }
@@ -485,6 +501,7 @@ if (isNode()) {
       } else {
         console.log('All programs valid.');
       }
+      printWarnings(programs);
     } else if (command === 'json-to-dat') {
       if (!inFile || !outFile) { console.error(USAGE); process.exit(1); }
       assertExt(inFile, '.json', 'input');
@@ -493,6 +510,7 @@ if (isNode()) {
         const buffer = await exportDat(inFile);
         writeFileSync(outFile, Buffer.from(buffer));
         console.log(`Wrote ${outFile}`);
+        printWarnings(unwrapPrograms(JSON.parse(readFileSync(inFile, 'utf8'))) ?? []);
       } catch (e) {
         console.error(`Error: ${e.message}`);
         if (e.validationErrors) printErrors(e.validationErrors, console.error);
