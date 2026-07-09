@@ -62,7 +62,7 @@ back to a `.dat` on export.
   `VALIDATION_MESSAGES[lang]` (`en`/`de`/`fr`; falls back to `en`). CLI uses `en`.
 - `wrapPrograms(programs)` / `unwrapPrograms(data)` — build/read the envelope.
 - `createProgram(prgNum)` — new program with safe defaults.
-- `defaultStepInfo(step)` — derived per-step label (e.g. `A5-P100`); the
+- `defaultStepInfo(step)` — derived per-step label (e.g. `A5-P99`); the
   empty-`info` fallback at serialize time and the editor placeholder.
 
 ## JSON envelope
@@ -122,6 +122,11 @@ switches it live.
 
 ## Gotchas
 
+- **Never hand-roll a `.dat` parser.** To read or compare a `.dat`, always go
+  through `node sticheditor.js dat-to-json` (and `json-to-dat` to write). The
+  328-byte layout has non-obvious quirks — `position` 1/3/4↔0/1/2 translation,
+  Latin-1 strings, the `"NNN " + title` prefix, derived `info` — that a quick
+  ad-hoc parser will get wrong. JSON is the canonical form to diff.
 - **`data-i18n` sets `textContent`, which wipes child elements.** Never put it
   on an element that wraps functional children (e.g. a `<label>` around a file
   `<input>`). Translate an inner `<span>` instead. (Use `data-i18n-title` /
@@ -145,8 +150,8 @@ at serialize time.
 ## SINTRO conventions (already baked into the JSON)
 
 The Markdown reference uses a step shorthand `<sil><calc><fireMethod><shotNum>`
-(e.g. `A5P100`, `B4S3`; `P+` prefix = probe frei → `breakNotAllowed=0`;
-`shotNum=100` = unlimited). These conventions produced the current JSON:
+(e.g. `A5P99`, `B4S3`; `P+` prefix = probe frei → `breakNotAllowed=0`;
+`shotNum` max is `99`, and `99` = unlimited). These conventions produced the current JSON:
 
 - **"ohne Druck"** program → `breakNotAllowed=0` (a break is a non-printing probe).
 - **printMode**: probe steps (`P`) → `N`; other steps → `P`, but → `G` if it's
@@ -154,7 +159,7 @@ The Markdown reference uses a step shorthand `<sil><calc><fireMethod><shotNum>`
 - **calcHighscore** (Tiefschuss) = 1 on Serie (`S`) steps, except Feldschiessen,
   Feldstich, and OP programs.
 - **printFormat** default `Z` (`r`/`l` for Feldschiessen/OP).
-- **info** may be empty; derived at serialize (`A5-P100`; dash dropped if >8).
+- **info** may be empty; derived at serialize (`A5-P99`; dash dropped if >8).
 - **internalId** = `SIUS` + zero-padded SIUS program number (unused as ID,
   never displayed).
 

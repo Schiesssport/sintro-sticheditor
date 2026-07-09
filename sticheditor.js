@@ -48,7 +48,7 @@ class ProgramValidator {
 function validateStep(step, step1, err) {
   const p = (params) => ({ step: step1, ...params });
 
-  if (!Number.isInteger(step.shotNum) || step.shotNum < 0 || step.shotNum > 32767) {
+  if (!Number.isInteger(step.shotNum) || step.shotNum < 0 || step.shotNum > 99) {
     err('stepShotNum', p({ value: step.shotNum }));
   }
   validateLatin1Field(step.info, 8, 'stepInfo', err, step1);
@@ -221,9 +221,12 @@ class DatParser {
   }
 
   static serialize(programs) {
-    const buffer = new ArrayBuffer(programs.length * DatParser.RECORD_SIZE);
+    // The device expects records in ascending program-number order; the editor's
+    // in-memory list can be in import/edit order, so sort a copy before writing.
+    const ordered = [...programs].sort((a, b) => a.prgNum - b.prgNum);
+    const buffer = new ArrayBuffer(ordered.length * DatParser.RECORD_SIZE);
     const view = new DataView(buffer);
-    programs.forEach((prog, i) => DatParser.#writeRecord(view, i * DatParser.RECORD_SIZE, prog));
+    ordered.forEach((prog, i) => DatParser.#writeRecord(view, i * DatParser.RECORD_SIZE, prog));
     return buffer;
   }
 
@@ -383,7 +386,7 @@ export function validateProgram(prog) {
   return ProgramValidator.validate(prog);
 }
 
-// Readable per-step label derived from the step's own fields (e.g. "A5-P100").
+// Readable per-step label derived from the step's own fields (e.g. "A5-P99").
 // Used as the empty-info fallback at serialize time and as the editor
 // placeholder. Falls back to a dash-less form when it would exceed 8 chars.
 export function defaultStepInfo(step) {

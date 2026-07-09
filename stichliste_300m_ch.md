@@ -17,7 +17,7 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 |------|-----------|
 | `sil` | Scheibe / Silhouette (`A5`, `A10`, `A100`, `B4`, `B10`, `B100`) |
 | `fireMethod` | `P` = Probe, `E` = Einzelfeuer (EF), `S` = Serienfeuer (SF) |
-| `shotNum` | Schusszahl (`100` = unbegrenzt, z. B. SF0 / PR+) |
+| `shotNum` | Schusszahl (max. `99`; `99` = unbegrenzt, z. B. SF0 / PR+) |
 
 - **`P+`-Präfix**: „Probe frei" vor einem aktiven Schritt (unbegrenzte Probe),
   z. B. `P+A10E10`. Kein eigener Step.
@@ -31,14 +31,14 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 
 | Prg | Titel | Schritte | Notizen | SiusPrg |
 |-----|-------|--------|---------|---------|
-| 201 | A5  P+ mit Druck | `A5P100` | | 011 |
-| 202 | A5  P+ ohne Druck | `A5P100` | | 085 |
+| 201 | A5  P+ mit Druck | `A5P99` | | 011 |
+| 202 | A5  P+ ohne Druck | `A5P99` | | 085 |
 | 203 | A5  P+ E4 | `P+A5E4` | | 019 |
 | 204 | A5  P+ E5 | `P+A5E5` | | 012 |
 | 205 | A5  P+ E6 | `P+A5E6` | | 013 |
 | 206 | A5  P+ E8 | `P+A5E8` | | 020 |
 | 207 | A5  P+ E10 | `P+A5E10` | | 015 |
-| 208 | A5  P+ S0 | `P+A5S100` | | 010 |
+| 208 | A5  P+ S0 | `P+A5S99` | | 010 |
 | 209 | A5  P+ S5 | `P+A5S5` | | 023 |
 | 210 | A5  P+ S6 | `P+A5S6` | | 024 |
 | 211 | A5  P+ S3 S3 | `P+A5S3` `A5S3` | | 025 |
@@ -68,8 +68,8 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 
 | Prg | Titel | Schritte | Notizen | SiusPrg |
 |-----|-------|--------|---------|---------|
-| 301 | A10  P+ mit Druck | `A10P100` | | 031 |
-| 302 | A10  P+ ohne Druck | `A10P100` | | 086 |
+| 301 | A10  P+ mit Druck | `A10P99` | | 031 |
+| 302 | A10  P+ ohne Druck | `A10P99` | | 086 |
 | 303 | A10  P+ E5 | `P+A10E5` | | 033 |
 | 304 | A10  P+ E6 | `P+A10E6` | | 034 |
 | 305 | A10  P+ E8 | `P+A10E8` | | 035 |
@@ -77,7 +77,7 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 | 307 | A10  P2 E6 | `A10P2` `A10E6` | | 666 |
 | 308 | A10  P2 E10 | `A10P2` `A10E10` | | 029 |
 | 309 | A10  P2 E6 E4 | `A10P2` `A10E6` `A10E4` | | 038 |
-| 310 | A10  P+ S0 | `P+A10S100` | | 030 |
+| 310 | A10  P+ S0 | `P+A10S99` | | 030 |
 | 311 | A10  P+ S5 | `P+A10S5` | | 043 |
 | 312 | A10  P+ S6 | `P+A10S6` | | 044 |
 | 313 | A10  P+ S3 S3 | `P+A10S3` `A10S3` | | 045 |
@@ -110,8 +110,8 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 
 | Prg | Titel | Schritte | Notizen | SiusPrg |
 |-----|-------|--------|---------|---------|
-| 401 | A100  P+ mit Druck | `A100P100` | | 051 |
-| 402 | A100  P+ ohne Druck | `A100P100` | | 087 |
+| 401 | A100  P+ mit Druck | `A100P99` | | 051 |
+| 402 | A100  P+ ohne Druck | `A100P99` | | 087 |
 | 403 | A100  P+ E2 (Nachdoppel) | `P+A100E2` | | 052 |
 | 404 | A100  P+ E3 | `P+A100E3` | | 053 |
 | 405 | A100  P+ E4 | `P+A100E4` | | 054 |
@@ -120,7 +120,7 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 | 408 | A100  P+ E10 | `P+A100E10` | | 057 |
 | 409 | A100  P+ E15 | `P+A100E15` | | 088 |
 | 410 | A100  P1 E4 | `A100P1` `A100E4` | | 665 |
-| 411 | A100  P+ S0 | `P+A100S100` | | 050 |
+| 411 | A100  P+ S0 | `P+A100S99` | | 050 |
 | 412 | A100  P+ S4 S4 | `P+A100S4` `A100S4` | | 049 |
 | 413 | A100  P2 E5 S2 S3 | `A100P2` `A100E5` `A100S2` `A100S3` | | 058 |
 
@@ -128,10 +128,10 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 
 | Prg | Titel | Schritte | Notizen | SiusPrg |
 |-----|-------|--------|---------|---------|
-| 501 | B4  P+ mit Druck | `B4P100` | | 061 |
-| 502 | B4  P+ ohne Druck | `B4P100` | | 089 |
+| 501 | B4  P+ mit Druck | `B4P99` | | 061 |
+| 502 | B4  P+ ohne Druck | `B4P99` | | 089 |
 | 503 | B4  P+ E6 | `P+B4E6` | | 062 |
-| 504 | B4  P+ S0 | `P+B4S100` | | 060 |
+| 504 | B4  P+ S0 | `P+B4S99` | | 060 |
 | 505 | B4  P+ S5 | `P+B4S5` | | 064 |
 | 506 | B4  P+ S6 | `P+B4S6` | | 063 |
 | 507 | B4  P+ S3 S3 | `P+B4S3` `B4S3` | | 065 |
@@ -152,9 +152,9 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 
 | Prg | Titel | Schritte | Notizen | SiusPrg |
 |-----|-------|--------|---------|---------|
-| 571 | B10  P+ | `B10P100` | | 968 |
-| 572 | B10  P+ E0 | `P+B10E100` | | 076 |
-| 573 | B10  P+ S0 | `P+B10S100` | | 077 |
+| 571 | B10  P+ | `B10P99` | | 968 |
+| 572 | B10  P+ E0 | `P+B10E99` | | 076 |
+| 573 | B10  P+ S0 | `P+B10S99` | | 077 |
 | 574 | B10  P+ E2 S3 S5 | `P+B10E2` `B10S3` `B10S5` | | 376 |
 | 575 | B10  P+ E2 S2 | `P+B10E2` `B10S2` | | 078 |
 | 576 | B10  P+ S3 S5 | `P+B10S3` `B10S5` | | 079 |
@@ -163,9 +163,9 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 
 | Prg | Titel | Schritte | Notizen | SiusPrg |
 |-----|-------|--------|---------|---------|
-| 591 | B100  P+ | `B100P100` | | 967 |
-| 592 | B100  P+ E0 | `P+B100E100` | | 081 |
-| 593 | B100  P+ S0 | `P+B100S100` | | 080 |
+| 591 | B100  P+ | `B100P99` | | 967 |
+| 592 | B100  P+ E0 | `P+B100E99` | | 081 |
+| 593 | B100  P+ S0 | `P+B100S99` | | 080 |
 | 594 | B100  P+ E10 | `P+B100E10` | | 082 |
 
 ## OP
@@ -173,19 +173,19 @@ Berechnung 5, Feuerart P, Schusszahl 3.
 | Prg | Titel | Schritte | Notizen | SiusPrg |
 |-----|-------|--------|---------|---------|
 | 801 | OP Komplett | `P+A5E5` `P+B4E5` `B4S2` `B4S3` `B4S5` | Druckformat: l | 840 |
-| 802 | OP A5 Probe | `A5P100` | Druckformat: l | 839 |
+| 802 | OP A5 Probe | `A5P99` | Druckformat: l | 839 |
 | 803 | OP A5 Programm | `P+A5E5` | Druckformat: l | 838 |
-| 804 | OP B4 Probe | `B4P100` | Druckformat: l | 836 |
+| 804 | OP B4 Probe | `B4P99` | Druckformat: l | 836 |
 | 805 | OP B4 Programm | `P+B4E5` `B4S2` `B4S3` `B4S5` | Druckformat: l | 837 |
 
 ## Gruppenmeisterschaft
 
-A5P / A10P → P100.
+A5P / A10P → P99.
 
 | Prg | Titel | Schritte | Notizen | SiusPrg |
 |-----|-------|--------|---------|---------|
-| 851 | Gruppenmeisterschaft A5 P+ | `A5P100` | | 398 |
-| 852 | Gruppenmeisterschaft A10 P+ | `A10P100` | | 397 |
+| 851 | Gruppenmeisterschaft A5 P+ | `A5P99` | | 398 |
+| 852 | Gruppenmeisterschaft A10 P+ | `A10P99` | | 397 |
 | 853 | Gruppenmeisterschaft Feld A | `P+A10E10` `A10E10` | | 084 |
 | 854 | Gruppenmeisterschaft Feld D | `P+A10E10` `A10S5` | | 083 |
 | 855 | Gruppenmeisterschaft Feld E | `P+A10E10` `A10S5` | | 074 |
@@ -224,7 +224,7 @@ Für die Stichliste selbst sind sie nicht relevant.
 - **Druckformat**: abweichend vom Standard `Z` per Notiz-Tag
   `Druckformat: <Buchstabe>` (z. B. `r` = Rechts, `l` = Links).
 - **Info** (Anzeige am Stand): bleibt leer und wird beim Export automatisch aus
-  dem Schritt abgeleitet (`A5-P100`, `A5-S5`; kompakt ohne Bindestrich, falls
+  dem Schritt abgeleitet (`A5-P99`, `A5-S5`; kompakt ohne Bindestrich, falls
   länger als 8 Zeichen).
 - **internalId**: ungenutzt/nicht angezeigt — enthält die SIUS-Referenz
   `SIUS<###>` (SiusPrg, 3-stellig mit Null aufgefüllt), z. B. `SIUS011`.

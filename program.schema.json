@@ -114,8 +114,8 @@
       "additionalProperties": false,
       "properties": {
         "shotNum": {
-          "type": "integer", "minimum": 0, "maximum": 32767,
-          "description": "Number of shots in this stage. 0 marks the stage (and all subsequent stages) as inactive."
+          "type": "integer", "minimum": 0, "maximum": 99,
+          "description": "Number of shots in this stage. 0 marks the stage (and all subsequent stages) as inactive. 99 is the maximum and denotes 'unbegrenzt' (unlimited, e.g. free probe or SF0)."
         },
         "info": {
           "type": "string", "maxLength": 8,
